@@ -1,1 +1,34 @@
-backend/.env
+node_modules/
+bower_components/   
+
+dist/
+build/
+out/
+.next/     # For Next.js projects
+.nuxt/     # For Nuxt.js projects   
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*   
+
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local   
+
+
+.DS_Store          # macOS system file
+Thumbs.db          # Windows system file
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace   
+
+coverage/
+.nyc_output/   
+
+package-lock.json
+yarn.lock
