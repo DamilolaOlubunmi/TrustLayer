@@ -25,6 +25,8 @@ class Platform(SQLModel, table=True):
     feedbacks: List["Feedback"] = Relationship(back_populates="platform")
     buyers: List["BuyerProfile"] = Relationship(back_populates="platform")
     vendors: List["VendorProfile"] = Relationship(back_populates="platform")
+    # One-to-one relationship: each platform has a settings record
+    settings: Optional["Settings"] = Relationship(back_populates="platform")
 
 
 # =========================
@@ -191,3 +193,34 @@ class TransactionFeatures(SQLModel, table=True):
     has_completed_any_txn: Optional[int] = None
 
     created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+
+# =========================
+# Platform Settings Table
+# =========================
+class Settings(SQLModel, table=True):
+    __tablename__ = "settings"
+
+    id: int | None = Field(default=None, primary_key=True)
+    platform_id: str = Field(foreign_key="platforms.id", unique=True)
+
+    # Weighting for score aggregation
+    buyer_weight: float = Field(default=0.5)
+    vendor_weight: float = Field(default=0.5)
+
+    # Decision thresholds (0-1)
+    block_threshold: float = Field(default=0.8)
+    review_threshold: float = Field(default=0.6)
+
+    # Presets the platform wants active (stored as JSON list)
+    active_presets: Optional[list] = Field(default=None, sa_column=Column(JSON))
+
+    # Notification preferences
+    notify_email: bool = Field(default=False)
+    notify_sms: bool = Field(default=False)
+    notify_phone: bool = Field(default=False)
+
+    created_at: datetime = Field(default_factory=datetime.now)
+
+    # Relationship
+    platform: Optional[Platform] = Relationship(back_populates="settings")
