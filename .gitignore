@@ -33,5 +33,25 @@ coverage/
 package-lock.json
 yarn.lock
 
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
-frontend/src/components/dummy changes
+.venv
+env/
+venv/
+
+
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.pytest_cache/
+
+*.ipynb
+
