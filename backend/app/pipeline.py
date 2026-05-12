@@ -14,3 +14,17 @@ def run_evaluation_pipeline(payload):
         ],
         "recommended_action": "Proceed with transaction"
     }
+
+
+def evaluate(payload, db):
+    # 1. validate
+    # 2. run rules
+    # 3. build features
+    # 4. run Model A + Model B in parallel
+    # 5. aggregate scores
+    # 6. determine confidence
+    # 7. if LOW → llm.escalate_to_llm()
+    # 8. if HIGH/MED → shap.explain() → llm.explain_with_llm()
+    # 9. build response
+    # 10. save to db
+    pass
