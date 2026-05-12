@@ -1,17 +1,29 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 
-from models import (
-    EvaluateRequest,
-    EvaluateResponse,
-    FeedbackRequest
-)
+from app.database import create_db_and_tables
+from app.api.profile_routes import router as profile_router
+from app.api.dashboard_routes import router as dashboard_router
 
-from pipeline import run_evaluation_pipeline
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Starting up...")
+
+    create_db_and_tables()
+    yield
+    
+    print("Shutting down...")
 
 
 app = FastAPI(
-    title="TrustLayer API"
+    title="TrustLayer API",
+    lifespan=lifespan
 )
+
+# mount auth/profile routes
+app.include_router(profile_router)
+# mount dashboard/evaluation routes
+app.include_router(dashboard_router)
 
 
 @app.get("/")
@@ -20,30 +32,8 @@ def home():
         "message": "TrustLayer API running"
     }
 
-
-@app.post(
-    "/v1/evaluate",
-    response_model=EvaluateResponse
-)
-def evaluate(payload: EvaluateRequest):
-
-    result = run_evaluation_pipeline(payload)
-
-    return result
-
-
-@app.post("/v1/feedback")
-def feedback(payload: FeedbackRequest):
-
+app.get("/health")
+def health():
     return {
-        "status": "success",
-        "transaction_id": payload.transaction_id
-    }
-
-
-@app.get("/v1/transactions")
-def transactions():
-
-    return {
-        "transactions": []
+        "status": "ok"
     }
