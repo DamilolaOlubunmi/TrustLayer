@@ -125,3 +125,26 @@ class UpdateProfileRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str
+
+
+class SettingsResponse(BaseModel):
+    buyer_weight: float
+    vendor_weight: float
+    block_threshold: float
+    review_threshold: float
+    active_presets: Optional[List[str]] = None
+    notify_email: bool
+    notify_sms: bool
+    notify_phone: bool
+    created_at: datetime
+
+
+class SettingsUpdateRequest(BaseModel):
+    buyer_weight: Optional[float] = None
+    vendor_weight: Optional[float] = None
+    block_threshold: Optional[float] = None
+    review_threshold: Optional[float] = None
+    active_presets: Optional[List[str]] = None
+    notify_email: Optional[bool] = None
+    notify_sms: Optional[bool] = None
+    notify_phone: Optional[bool] = None

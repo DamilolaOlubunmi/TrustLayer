@@ -6,8 +6,8 @@ import hashlib
 import secrets
 
 from app.database import get_session
-from app.models import Platform, APIKey
-from app.schema import SignupRequest, TokenResponse, UpdateProfileRequest, ChangePasswordRequest, APIKeyResponse
+from app.models import Platform, APIKey, Settings
+from app.schema import SignupRequest, TokenResponse, UpdateProfileRequest, ChangePasswordRequest, APIKeyResponse, SettingsResponse, SettingsUpdateRequest
 from app.api.auth import (
     get_password_hash,
     verify_password,
@@ -55,6 +55,22 @@ def signup(payload: SignupRequest, session: Session = Depends(get_session)):
     
     # Create API key for the new platform
     _create_api_key_for_platform(session, platform.id)
+
+    # Initialize default settings for the platform
+    default_settings = Settings(
+        platform_id=platform.id,
+        buyer_weight=0.4,
+        vendor_weight=0.6,
+        block_threshold=0.8,
+        review_threshold=0.6,
+        active_presets=[],
+        notify_email=False,
+        notify_sms=False,
+        notify_phone=False,
+    )
+    session.add(default_settings)
+    session.commit()
+    session.refresh(default_settings)
 
     token = create_access_token(subject=str(platform.id))
     return {"access_token": token, "token_type": "bearer"}
@@ -176,4 +192,77 @@ def regenerate_api_key(session: Session = Depends(get_session), current_user: Pl
         "api_key": raw_key,
         "name": api_key.name,
         "created_at": api_key.created_at
+    }
+
+
+
+# Settings management
+@router.get("/settings", response_model=SettingsResponse)
+def get_settings(session: Session = Depends(get_session), current_user: Platform = Depends(get_current_user)):
+    statement = select(Settings).where(Settings.platform_id == current_user.id)
+    settings = session.exec(statement).first()
+    if not settings:
+        raise HTTPException(status_code=404, detail="Settings not found")
+
+    return {
+        "buyer_weight": settings.buyer_weight,
+        "vendor_weight": settings.vendor_weight,
+        "block_threshold": settings.block_threshold,
+        "review_threshold": settings.review_threshold,
+        "active_presets": settings.active_presets or [],
+        "notify_email": settings.notify_email,
+        "notify_sms": settings.notify_sms,
+        "notify_phone": settings.notify_phone,
+        "created_at": settings.created_at,
+    }
+
+
+@router.patch("/settings", response_model=SettingsResponse)
+def update_settings(payload: SettingsUpdateRequest, session: Session = Depends(get_session), current_user: Platform = Depends(get_current_user)):
+    statement = select(Settings).where(Settings.platform_id == current_user.id)
+    settings = session.exec(statement).first()
+    if not settings:
+        raise HTTPException(status_code=404, detail="Settings not found")
+
+    changed = False
+    if payload.buyer_weight is not None:
+        settings.buyer_weight = payload.buyer_weight
+        changed = True
+    if payload.vendor_weight is not None:
+        settings.vendor_weight = payload.vendor_weight
+        changed = True
+    if payload.block_threshold is not None:
+        settings.block_threshold = payload.block_threshold
+        changed = True
+    if payload.review_threshold is not None:
+        settings.review_threshold = payload.review_threshold
+        changed = True
+    if payload.active_presets is not None:
+        settings.active_presets = payload.active_presets
+        changed = True
+    if payload.notify_email is not None:
+        settings.notify_email = payload.notify_email
+        changed = True
+    if payload.notify_sms is not None:
+        settings.notify_sms = payload.notify_sms
+        changed = True
+    if payload.notify_phone is not None:
+        settings.notify_phone = payload.notify_phone
+        changed = True
+
+    if changed:
+        session.add(settings)
+        session.commit()
+        session.refresh(settings)
+
+    return {
+        "buyer_weight": settings.buyer_weight,
+        "vendor_weight": settings.vendor_weight,
+        "block_threshold": settings.block_threshold,
+        "review_threshold": settings.review_threshold,
+        "active_presets": settings.active_presets or [],
+        "notify_email": settings.notify_email,
+        "notify_sms": settings.notify_sms,
+        "notify_phone": settings.notify_phone,
+        "created_at": settings.created_at,
     }
