@@ -7,13 +7,9 @@ function Navbar() {
   return (
     <header className="bg-[#faf9fc] sticky top-0 z-50 border-b border-[#c4c6cf] shadow-sm">
       <div className="flex justify-between items-center w-full px-4 md:px-8 py-1 max-w-[1600px] mx-auto min-h-[64px]">
-
-        {/* Logo */}
         <a href="#" className="text-[24px] font-bold text-[#0d50d5] tracking-tight" style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
           TrustLayer
         </a>
-
-        {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6">
           {['How it Works', 'Documentation', 'Dashboard'].map(l => (
             <a key={l} href={`#${l.toLowerCase().replace(/ /g, '-')}`}
@@ -22,8 +18,6 @@ function Navbar() {
             </a>
           ))}
         </nav>
-
-        {/* CTA buttons */}
         <div className="hidden md:flex items-center gap-3">
           <a href="#"
              className="px-3 py-1 text-[#0d50d5] text-[14px] font-semibold border border-[#0d50d5] rounded-lg hover:bg-[#0d50d5] hover:text-white transition-colors h-[40px] inline-flex items-center justify-center">
@@ -34,8 +28,6 @@ function Navbar() {
             Get Started
           </a>
         </div>
-
-        {/* Mobile toggle */}
         <button className="md:hidden p-2 text-[#43474e]" onClick={() => setOpen(!open)}>
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             {open
@@ -44,7 +36,6 @@ function Navbar() {
           </svg>
         </button>
       </div>
-
       {open && (
         <div className="md:hidden border-t border-[#c4c6cf] bg-white px-4 py-3 space-y-2">
           {['How it Works', 'Documentation', 'Dashboard'].map(l => (
@@ -67,8 +58,6 @@ function Hero() {
   return (
     <section className="px-4 md:px-8 py-16 md:py-[100px] max-w-[1600px] mx-auto overflow-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-
-        {/* Left copy */}
         <div className="flex flex-col gap-6 max-w-2xl">
           <h1 className="text-[36px] md:text-[48px] font-bold text-[#022448] leading-tight tracking-tight"
               style={{ fontFamily: 'Hanken Grotesk, sans-serif', letterSpacing: '-0.02em' }}>
@@ -89,30 +78,21 @@ function Hero() {
             </a>
           </div>
           <div className="flex items-center gap-3 mt-2 pt-3 border-t border-[#c4c6cf]/30">
-            {/* Shield check icon */}
             <svg className="w-5 h-5 text-[#0d50d5]" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l4.59-4.58L17 9l-6 6z"/>
             </svg>
-            <span className="text-[14px] font-semibold text-[#43474e]">
-              Trusted by enterprise platforms globally
-            </span>
+            <span className="text-[14px] font-semibold text-[#43474e]">Trusted by enterprise platforms globally</span>
           </div>
         </div>
-
-        {/* Right: code mockup */}
         <div className="relative w-full rounded-lg border border-[#c4c6cf] bg-[#022448] shadow-lg overflow-hidden flex flex-col">
-          {/* Window bar */}
           <div className="flex items-center px-3 py-2 border-b border-white/10 bg-black/20">
             <div className="flex gap-1.5">
               <div className="w-3 h-3 rounded-full bg-[#ba1a1a]"/>
               <div className="w-3 h-3 rounded-full bg-[#74777f]"/>
               <div className="w-3 h-3 rounded-full bg-[#74777f]"/>
             </div>
-            <div className="ml-3 font-mono text-[13px] text-[#e3e2e6]/70">
-              api.trustlayer.io/v1/evaluate
-            </div>
+            <div className="ml-3 font-mono text-[13px] text-[#e3e2e6]/70">api.trustlayer.io/v1/evaluate</div>
           </div>
-          {/* Code */}
           <div className="p-6 font-mono text-[13px] text-[#e3e2e6] overflow-x-auto flex-1 flex flex-col justify-center leading-relaxed">
             <pre>{`{
   `}<span className="text-[#b5c4ff]">"transaction_id"</span>{`: `}<span className="text-[#a3defe]">"tx_9982a4"</span>{`,
@@ -134,9 +114,9 @@ function Hero() {
 /* ─── Stats Bar ──────────────────────────────────────────── */
 function StatsBar() {
   const stats = [
-    { value: '₦4.2M+', label: 'Protected' },
-    { value: '247',    label: 'Transactions Evaluated' },
-    { value: '18',     label: 'Frauds Blocked' },
+    { value: '₦4.2M+',  label: 'Protected' },
+    { value: '247',     label: 'Transactions Evaluated' },
+    { value: '18',      label: 'Frauds Blocked' },
     { value: '< 200ms', label: 'Response Time' },
   ];
   return (
@@ -146,13 +126,10 @@ function StatsBar() {
           {stats.map((s, i) => (
             <>
               <div key={s.label} className="flex-1 flex flex-col items-center text-center">
-                <span className="text-[32px] font-bold text-[#1A56DB] mb-1"
-                      style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
+                <span className="text-[32px] font-bold text-[#1A56DB] mb-1" style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
                   {s.value}
                 </span>
-                <span className="text-[14px] text-[#43474e] uppercase tracking-wider">
-                  {s.label}
-                </span>
+                <span className="text-[14px] text-[#43474e] uppercase tracking-wider">{s.label}</span>
               </div>
               {i < stats.length - 1 && (
                 <div key={`div-${i}`} className="hidden md:block w-px h-12 bg-[#c4c6cf]/30"/>
@@ -169,31 +146,19 @@ function StatsBar() {
 const STEPS = [
   {
     num: '1',
-    icon: (
-      <svg className="w-6 h-6 text-[#1A56DB]" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
-      </svg>
-    ),
+    icon: <svg className="w-6 h-6 text-[#1A56DB]" viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>,
     title: 'Platform Calls Our API',
     body: "Before any payment executes, your backend sends transaction context to TrustLayer's /evaluate endpoint.",
   },
   {
     num: '2',
-    icon: (
-      <svg className="w-6 h-6 text-[#1A56DB]" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l4.59-4.58L17 9l-6 6z"/>
-      </svg>
-    ),
+    icon: <svg className="w-6 h-6 text-[#1A56DB]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l4.59-4.58L17 9l-6 6z"/></svg>,
     title: 'AI Evaluates the Risk',
     body: 'Our dual ML models score the buyer and vendor independently. SHAP explains which signals drove the decision.',
   },
   {
     num: '3',
-    icon: (
-      <svg className="w-6 h-6 text-[#1A56DB]" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M7 2v11h3v9l7-12h-4l4-8z"/>
-      </svg>
-    ),
+    icon: <svg className="w-6 h-6 text-[#1A56DB]" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>,
     title: 'Decision Returned Instantly',
     body: 'ALLOW, REVIEW, or BLOCK — returned in under 200ms with plain-English reasons your team can act on.',
   },
@@ -203,18 +168,15 @@ function HowItWorks() {
   return (
     <section id="how-it-works" className="py-[100px] px-4 md:px-8 max-w-[1600px] mx-auto">
       <div className="text-center mb-16">
-        <h2 className="text-[32px] font-bold text-[#1E3A5F] mb-3"
-            style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
+        <h2 className="text-[32px] font-bold text-[#1E3A5F] mb-3" style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
           How TrustLayer Works
         </h2>
         <p className="text-[18px] text-[#43474e]">Three steps. Zero friction. Full protection.</p>
       </div>
-
       <div className="relative flex flex-col md:flex-row justify-between gap-16 md:gap-6">
         {STEPS.map((step, i) => (
           <>
             <div key={step.num} className="flex-1 flex flex-col items-center text-center">
-              {/* Circle */}
               <div className="mb-6 relative">
                 <div className="w-16 h-16 rounded-full bg-[#1A56DB] flex items-center justify-center text-white font-bold text-xl shadow-lg"
                      style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
@@ -224,19 +186,14 @@ function HowItWorks() {
                   {step.icon}
                 </div>
               </div>
-              <h3 className="text-[24px] font-semibold text-[#022448] mb-3"
-                  style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
+              <h3 className="text-[24px] font-semibold text-[#022448] mb-3" style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
                 {step.title}
               </h3>
               <p className="text-[16px] text-[#43474e] max-w-[320px]">{step.body}</p>
             </div>
-
-            {/* Arrow connector (desktop only) */}
             {i < STEPS.length - 1 && (
               <div key={`arr-${i}`} className="hidden md:flex items-center pt-8 text-[#c4c6cf]">
-                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
               </div>
             )}
           </>
@@ -252,13 +209,10 @@ function DemoSection() {
     <section id="live-demo" className="py-16 md:py-[100px] px-4 md:px-8 bg-white w-full">
       <div className="max-w-[1200px] mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-[32px] font-bold text-[#1E3A5F] mb-3"
-              style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
+          <h2 className="text-[32px] font-bold text-[#1E3A5F] mb-3" style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
             Try It Right Now
           </h2>
-          <p className="text-[18px] text-[#43474e]">
-            Enter a transaction scenario and see TrustLayer evaluate it live.
-          </p>
+          <p className="text-[18px] text-[#43474e]">Enter a transaction scenario and see TrustLayer evaluate it live.</p>
         </div>
         <DemoWidget />
       </div>
@@ -277,8 +231,6 @@ function IntegrationSection() {
           </h2>
           <p className="text-[18px] text-[#E8F0FD]">Drop three lines into your checkout flow. That's it.</p>
         </div>
-
-        {/* Code block */}
         <div className="bg-[#0B1E33] rounded-xl border border-white/10 shadow-2xl overflow-hidden mb-6">
           <div className="flex items-center px-6 py-3 bg-black/20 border-b border-white/5">
             <div className="flex gap-1.5 mr-4">
@@ -309,12 +261,9 @@ function IntegrationSection() {
             </pre>
           </div>
         </div>
-
         <div className="flex flex-wrap justify-center gap-3">
           {['REST API', 'JSON Response', 'Async-ready'].map(t => (
-            <span key={t} className="px-6 py-1.5 bg-[#2D486D] text-white text-[13px] font-semibold rounded-full">
-              {t}
-            </span>
+            <span key={t} className="px-6 py-1.5 bg-[#2D486D] text-white text-[13px] font-semibold rounded-full">{t}</span>
           ))}
         </div>
       </div>
@@ -361,27 +310,119 @@ function FeaturesGrid() {
     <section id="features" className="py-[100px] px-4 md:px-8 bg-[#faf9fc] w-full">
       <div className="max-w-[1200px] mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-[32px] font-bold text-[#022448]"
-              style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
+          <h2 className="text-[32px] font-bold text-[#022448]" style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
             Everything Your Platform Needs
           </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {FEATURES.map((f, i) => (
-            <div key={i}
-                 className="bg-white p-6 border border-[#c4c6cf] rounded-lg hover:border-[#0d50d5] transition-colors shadow-sm">
+            <div key={i} className="bg-white p-6 border border-[#c4c6cf] rounded-lg hover:border-[#0d50d5] transition-colors shadow-sm">
               <div className="w-12 h-12 bg-[#d5e3ff] rounded-lg flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-[#0d50d5]" viewBox="0 0 24 24" fill="currentColor">
-                  {f.icon}
-                </svg>
+                <svg className="w-8 h-8 text-[#0d50d5]" viewBox="0 0 24 24" fill="currentColor">{f.icon}</svg>
               </div>
-              <h3 className="text-[24px] font-semibold text-[#022448] mb-3"
-                  style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
+              <h3 className="text-[24px] font-semibold text-[#022448] mb-3" style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
                 {f.title}
               </h3>
               <p className="text-[16px] text-[#43474e] leading-relaxed">{f.body}</p>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Platform Types ─────────────────────────────────────── */
+const PLATFORMS = [
+  {
+    title: 'Marketplaces',
+    body: 'Bilateral scoring. Catch fake vendor listings before buyers pay.',
+    icon: (
+      <svg className="w-6 h-6 text-[#1A56DB]" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20 4H4v2l8 5 8-5V4zm0 4.236l-8 5-8-5V20h16V8.236z"/>
+      </svg>
+    ),
+  },
+  {
+    title: 'E-commerce',
+    body: 'Buyer-focused scoring. Stop stolen card usage and chargeback abuse.',
+    icon: (
+      <svg className="w-6 h-6 text-[#1A56DB]" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM7.17 14l.94-2h7.45c.75 0 1.41-.41 1.75-1.03L21 5H5.21L4.27 3H1v2h2l3.6 7.59L5.25 15c-.16.28-.25.61-.25.95C5 17.1 5.9 18 7 18h13v-2H7.42c-.13 0-.25-.11-.25-.24V14z"/>
+      </svg>
+    ),
+  },
+  {
+    title: 'Gig Platforms',
+    body: 'Protect clients from service non-delivery. Score freelancer credibility.',
+    icon: (
+      <svg className="w-6 h-6 text-[#1A56DB]" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20 6h-2.18c.07-.44.18-.86.18-1.3C18 2.55 15.45 1 13.15 1c-1.3 0-2.4.52-3.15 1.39C9.25 1.52 8.15 1 6.85 1 4.55 1 2 2.55 2 4.7c0 .44.11.86.18 1.3H0v2h1l1 13h20l1-13h1V6h-4zm-6.85-3c1.12 0 2.85.61 2.85 1.7 0 .44-.43 1.3-2 1.3H12V4.61C12.37 3.67 13.04 3 13.15 3zm-6.3 0C6.96 3 7.63 3.67 8 4.61V6H6c-1.57 0-2-.86-2-1.3C4 3.61 5.73 3 6.85 3zM4 19l-.85-11H8v2h2v-2h4v2h2v-2h4.85L20 19H4z"/>
+      </svg>
+    ),
+  },
+  {
+    title: 'B2B Procurement',
+    body: 'Vendor-side scoring. Catch phantom suppliers and invoice fraud.',
+    icon: (
+      <svg className="w-6 h-6 text-[#1A56DB]" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>
+      </svg>
+    ),
+  },
+];
+
+function PlatformTypes() {
+  return (
+    <section className="py-[100px] px-4 md:px-8 bg-white w-full">
+      <div className="max-w-[1200px] mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-[32px] font-bold text-[#022448] mb-3" style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
+            Built For Every Payment-Enabled Platform
+          </h2>
+          <p className="text-[18px] text-[#43474e]">
+            TrustLayer adapts its risk weighting based on your platform type.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {PLATFORMS.map((p) => (
+            <div key={p.title} className="bg-white p-6 border border-[#c4c6cf] rounded-lg hover:border-[#0d50d5] transition-colors shadow-sm">
+              <div className="w-11 h-11 bg-[#d5e3ff] rounded-lg flex items-center justify-center mb-5">
+                {p.icon}
+              </div>
+              <h3 className="text-[18px] font-semibold text-[#022448] mb-2" style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
+                {p.title}
+              </h3>
+              <p className="text-[14px] text-[#43474e] leading-relaxed">{p.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── CTA Banner ─────────────────────────────────────────── */
+function CTABanner() {
+  return (
+    <section className="bg-[#1A56DB] w-full py-[80px] px-4 md:px-8">
+      <div className="max-w-[800px] mx-auto text-center">
+        <h2 className="text-[32px] md:text-[40px] font-bold text-white leading-tight mb-4"
+            style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
+          Protect your platform before the next fraud attempt.
+        </h2>
+        <p className="text-[16px] text-white/70 mb-10">
+          Integration takes one afternoon. Protection starts immediately.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a href="#"
+             className="px-8 py-3 bg-white text-[#1A56DB] text-[14px] font-semibold rounded-lg hover:bg-[#f0f4ff] transition-colors h-[48px] inline-flex items-center justify-center shadow-sm">
+            Get API Access
+          </a>
+          <a href="#"
+             className="px-8 py-3 text-white text-[14px] font-semibold border border-white/60 rounded-lg hover:bg-white/10 transition-colors h-[48px] inline-flex items-center justify-center">
+            Read Documentation
+          </a>
         </div>
       </div>
     </section>
@@ -426,6 +467,8 @@ export default function LandingPage() {
         <DemoSection />
         <IntegrationSection />
         <FeaturesGrid />
+        <PlatformTypes />
+        <CTABanner />
       </main>
       <Footer />
     </div>
