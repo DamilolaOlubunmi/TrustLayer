@@ -15,6 +15,7 @@ import SettingsPage   from './pages/SettingsPage';
 // Dashboard shell components (new folder structure)
 import Sidebar from './components/Dashboard/Sidebar';
 import TopBar  from './components/Dashboard/TopBar';
+export default
 
 // ─── Dashboard layout wrapper ─────────────────────────────────────────────────
 // Renders the persistent sidebar + topbar and swaps the inner page component
@@ -78,7 +79,7 @@ function AuthGuard() {
 }
 
 // ─── Root app ─────────────────────────────────────────────────────────────────
-export default function App() {
+function App() {
   return (
     <BrowserRouter>
       <Routes>

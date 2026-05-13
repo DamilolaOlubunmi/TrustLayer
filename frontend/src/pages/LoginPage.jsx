@@ -1,7 +1,8 @@
 import { useState } from "react";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";import React from "react";
+export default
 
 function LoginPage({ onLogin, onGoSignup }) {
   // useState = React's way to remember a value between renders.

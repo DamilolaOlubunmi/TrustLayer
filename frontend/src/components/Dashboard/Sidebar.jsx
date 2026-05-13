@@ -1,4 +1,6 @@
 import React from "react";
+import { GridIcon, TxnIcon, FlagIcon, FeedbackIcon, SettingsIcon } from "../common/Icons";
+import { ChevronIcon } from "../common/Icons";
 export default
 
 function Sidebar({ activePage, onNavigate, user }) {
