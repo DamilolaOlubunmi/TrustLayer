@@ -33,7 +33,20 @@ logging.basicConfig(
 # =====================================================
 
 def load_training_data():
-
+    """Load and transform transaction records from the database for training.
+    
+    Retrieves all transactions from the database and transforms them into a standardized
+    nested dictionary format required by the feature engineering pipeline.
+    
+    Returns:
+        list: A list of dictionaries, each containing:
+            - transaction: dict with id, amount, timestamp
+            - buyer: dict with id, account_age_days
+            - vendor: dict with id, account_age_days, category
+            - session: dict with arrival_source, time_on_page_seconds, device_fingerprint
+            - buyer_profile: dict with avg_transaction_amount, total_past_transactions, past_dispute_count
+            - label: int (0=legitimate, 1=fraudulent)
+    """
     db_rows = fetch_training_transactions()
 
     rows = []
@@ -99,7 +112,20 @@ def load_training_data():
 # =====================================================
 
 def prepare_dataset(rows):
-
+    """Prepare training dataset by extracting features and labels from raw transaction data.
+    
+    Processes a list of transaction records, extracts buyer features for each transaction,
+    and organizes data into feature matrix and label vector suitable for model training.
+    
+    Args:
+        rows (list): List of transaction dictionaries with transaction, buyer, vendor,
+                     session, buyer_profile, and label fields.
+    
+    Returns:
+        tuple: A tuple containing:
+            - X (pd.DataFrame): Feature matrix with MODEL_A_FEATURES columns
+            - y (list): Label vector (0=legitimate, 1=fraudulent)
+    """
     feature_rows = []
     labels = []
 
@@ -137,7 +163,26 @@ def prepare_dataset(rows):
 # =====================================================
 
 def train_model(X, y):
-
+    """Train an XGBoost classifier for buyer fraud detection.
+    
+    Trains a binary classification model on buyer features, evaluates it on a held-out
+    test set, and computes performance metrics including accuracy, precision, recall, and F1.
+    Uses 80/20 train-test split with stratification to maintain class balance.
+    
+    Args:
+        X (pd.DataFrame): Feature matrix with buyer-side features
+        y (list or array-like): Binary labels (0=legitimate, 1=fraudulent)
+    
+    Returns:
+        tuple: A tuple containing:
+            - model (XGBClassifier): Trained model ready for prediction
+            - metrics (dict): Dictionary with keys:
+                - accuracy: float (0-1)
+                - precision: float (0-1)
+                - recall: float (0-1)
+                - f1_score: float (0-1)
+                - training_time_seconds: float
+    """
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -206,7 +251,17 @@ def train_model(X, y):
 # =====================================================
 
 def save_model(model):
-
+    """Serialize and save the trained buyer model to disk.
+    
+    Persists the trained XGBoost classifier to a pickle file for later loading
+    and inference in production systems.
+    
+    Args:
+        model (XGBClassifier): The trained buyer fraud detection model
+    
+    Returns:
+        None
+    """
     model_path = "buyer_model.pkl"
 
     joblib.dump(model, model_path)

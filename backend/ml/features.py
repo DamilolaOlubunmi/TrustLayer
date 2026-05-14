@@ -27,7 +27,29 @@ MODEL_B_FEATURES = [
 
 
 def build_buyer_features(payload, buyer_profile):
-
+    """Extract and compute buyer-side features for fraud detection.
+    
+    Analyzes transaction, buyer, vendor, and session data to generate a comprehensive
+    set of features for predicting buyer-initiated fraud. Computes risk signals based
+    on purchase patterns, account history, device characteristics, and transaction timing.
+    
+    Args:
+        payload (dict): Transaction request payload containing:
+            - transaction: dict with amount, timestamp, id
+            - buyer: dict with id, account_age_days
+            - vendor: dict with id, account_age_days, category
+            - session: dict with arrival_source, time_on_page_seconds, device_fingerprint
+        buyer_profile (dict): Historical buyer profile containing:
+            - avg_transaction_amount: float
+            - total_past_transactions: int
+            - past_dispute_count: int
+    
+    Returns:
+        dict: Feature vector with MODEL_A_FEATURES keys containing computed risk indicators.
+              Includes amount_deviation_ratio, buyer_account_age_days, buyer_total_past_txns,
+              is_first_transaction, buyer_dispute_count, time_of_day_risk, arrival_source_risk,
+              session_duration_flag, is_mobile, and category_risk_score.
+    """
     transaction = payload["transaction"]
     buyer = payload["buyer"]
     vendor = payload["vendor"]
@@ -192,7 +214,30 @@ def build_buyer_features(payload, buyer_profile):
 
 
 def build_vendor_features(payload, vendor_profile):
-
+    """Extract and compute vendor-side features for fraud detection.
+    
+    Analyzes transaction and vendor data to generate features for predicting vendor-initiated
+    fraud or suspicious vendor behavior. Evaluates vendor reputation, transaction history,
+    pricing patterns, and fraud risk indicators.
+    
+    Args:
+        payload (dict): Transaction request payload containing:
+            - transaction: dict with amount, timestamp, id
+            - buyer: dict with id, account_age_days
+            - vendor: dict with id, account_age_days, category, listing_price
+            - session: dict with arrival_source, time_on_page_seconds, device_fingerprint
+        vendor_profile (dict): Historical vendor profile containing:
+            - total_completed_transactions: int
+            - total_transactions: int
+            - category_avg_price: float
+            - tx_last_24h: int (transaction velocity)
+            - fraud_flags: int (count of fraud indicators)
+    
+    Returns:
+        dict: Feature vector with MODEL_B_FEATURES keys containing vendor risk indicators.
+              Includes vendor_account_age_days, vendor_completion_rate, listing_price_ratio,
+              vendor_tx_velocity, vendor_fraud_flags, category_risk_score, and has_completed_any_txn.
+    """
     vendor = payload["vendor"]
 
     
