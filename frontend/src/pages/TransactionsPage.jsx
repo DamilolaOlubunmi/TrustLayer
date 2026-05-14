@@ -1,7 +1,6 @@
 import { useState } from "react";
 import Button from "../components/common/Button";
 import TransactionTable from "../components/Dashboard/TransactionTable";
-import { useNavigate } from "react-router-dom";
 
 export default 
 
@@ -10,15 +9,18 @@ function TransactionsPage({ transactions, onSelectTx }) {
   const [filter, setFilter] = useState("All");
  
   const filtered = transactions.filter(t => {
-    const matchSearch = t.id.toLowerCase().includes(search.toLowerCase());
+    const term = search.toLowerCase();
+    const matchSearch =
+      t.id.toLowerCase().includes(term) ||
+      (t.vendor?.id || "").toLowerCase().includes(term);
     const matchFilter = filter === "All" || t.decision === filter;
     return matchSearch && matchFilter;
   });
  
   return (
-    <div className="flex-1 overflow-y-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
+    <div className="flex-1 overflow-y-auto p-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-[#022448]">Transactions</h1>
         <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-1.5">
           <span>🕐</span> All evaluated transactions · Updated just now
         </p>
@@ -26,7 +28,7 @@ function TransactionsPage({ transactions, onSelectTx }) {
  
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         {/* Filters */}
-        <div className="p-4 border-b border-gray-100 flex items-center gap-3">
+        <div className="p-6 border-b border-gray-100 flex items-center gap-3">
           <div className="flex-1 relative">
             <input
               placeholder="Search by transaction ID or vendor"
@@ -45,9 +47,9 @@ function TransactionsPage({ transactions, onSelectTx }) {
           <Button variant="primary">⬇ Export CSV</Button>
         </div>
  
-        <div className="p-4">
+        <div className="p-6">
           <TransactionTable transactions={filtered} onRowClick={onSelectTx} />
-          <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
+          <div className="flex justify-between items-center mt-6 pt-3 border-t border-gray-100">
             <p className="text-sm text-gray-500">Showing <strong>1–{filtered.length}</strong> of <strong>{filtered.length}</strong> transactions</p>
             <div className="flex gap-2">
               <Button variant="secondary" className="text-xs py-1.5">‹ Previous</Button>

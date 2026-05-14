@@ -1,3 +1,36 @@
+import Button from "../common/Button";
+import Badge from "../common/Badge";
+import { formatNGN } from "../../utilis/utilis";
+
+function ShapWaterfall({ signals = [] }) {
+  if (!signals.length) {
+    return <div className="text-sm text-gray-500">No risk breakdown data returned by the backend.</div>;
+  }
+
+  const maxVal = Math.max(...signals.map((signal) => Math.abs(signal.value || 0)), 1);
+
+  return (
+    <div className="space-y-3">
+      {signals.map((signal) => {
+        const width = (Math.abs(signal.value || 0) / maxVal) * 70;
+        const positive = (signal.value || 0) > 0;
+
+        return (
+          <div key={signal.feature} className="flex items-center gap-3">
+            <div className="w-44 text-xs font-mono text-gray-600 text-right shrink-0">{signal.feature}</div>
+            <div className="flex-1 flex items-center gap-2">
+              <div className={`h-3 rounded-sm ${positive ? "bg-red-400" : "bg-emerald-400"}`} style={{ width: `${Math.max(width * 3, 2)}px` }} />
+            </div>
+            <div className={`text-xs font-mono font-semibold w-12 text-right ${positive ? "text-red-600" : "text-emerald-600"}`}>
+              {(positive ? "+" : "")}{(signal.value || 0).toFixed(2)}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 import React from "react";
 export default
 
@@ -16,7 +49,7 @@ function TransactionDetail({ tx, onClose }) {
               <span>←</span> Back to Transactions
             </button>
             <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold text-gray-900 font-mono">{tx.id}</h2>
+              <h2 className="text-xl font-bold text-[#022448] font-mono">{tx.id}</h2>
               <Badge decision={tx.decision} />
             </div>
             <p className="text-xs text-gray-500 mt-0.5">{new Date(tx.timestamp).toLocaleString("en-NG")}</p>
@@ -54,7 +87,7 @@ function TransactionDetail({ tx, onClose }) {
           {/* Risk Breakdown (SHAP waterfall) */}
           {tx.shap_signals && (
             <div className="bg-white border border-gray-200 rounded-xl p-5">
-              <h3 className="font-semibold text-gray-900 mb-4">Risk Breakdown</h3>
+              <h3 className="font-semibold text-[#022448] mb-4">Risk Breakdown</h3>
               <ShapWaterfall signals={tx.shap_signals} />
             </div>
           )}
@@ -104,17 +137,17 @@ function TransactionDetail({ tx, onClose }) {
           )}
  
           {/* Plain English Explanation — this is the AI-generated part! */}
-          <div className="border border-gray-200 rounded-xl p-5 bg-[#0f172a]/[0.02]">
+          <div className="border border-gray-200 rounded-xl p-5 bg-[#0f172a]/2">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center">
                 <span className="text-white text-xs">✦</span>
               </div>
-              <h3 className="font-semibold text-gray-900">Plain English Explanation</h3>
+              <h3 className="font-semibold text-[#022448]">Plain English Explanation</h3>
             </div>
             <ul className="space-y-3">
-              {tx.reasons.map((reason, i) => (
+              {(tx.reasons || []).map((reason, i) => (
                 <li key={i} className="flex gap-3 text-sm text-gray-700 leading-relaxed">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0" />
                   {/* Render **bold** markdown */}
                   <span dangerouslySetInnerHTML={{ __html: reason.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
                 </li>

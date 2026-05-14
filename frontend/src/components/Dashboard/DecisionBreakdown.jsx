@@ -1,16 +1,17 @@
 import React from "react";
 export default
 
-function DecisionBreakdown({ transactions }) {
+function DecisionBreakdown({ transactions = [] }) {
   const total = transactions.length;
   const blocked = transactions.filter(t => t.decision === "BLOCK").length;
   const reviewed = transactions.filter(t => t.decision === "REVIEW").length;
   const allowed = transactions.filter(t => t.decision === "ALLOW").length;
-  const pct = n => Math.round((n / total) * 100);
+  const pct = n => (total ? Math.round((n / total) * 100) : 0);
  
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-      <h3 className="font-semibold text-gray-900 text-sm mb-4">Decision Breakdown</h3>
+      <h3 className="font-semibold text-[#022448] text-sm mb-4">Decision Breakdown</h3>
+      {!total && <div className="text-xs text-gray-500 mb-3">No backend transactions yet.</div>}
       {/* Visual stacked bar */}
       <div className="flex h-3 rounded-full overflow-hidden mb-3 gap-0.5">
         <div className="bg-emerald-500 rounded-l-full" style={{ width: `${pct(allowed)}%` }} />

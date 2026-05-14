@@ -1,24 +1,34 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
-import { useNavigate } from "react-router-dom";import React from "react";
+import { useAuth } from "../context/AuthContext";
+
 export default
 
-function LoginPage({ onLogin, onGoSignup }) {
-  // useState = React's way to remember a value between renders.
-  // [value, setValue] = useState(initialValue)
+function LoginPage() {
+  const navigate = useNavigate();
+  const { signIn, submitting, error, setError } = useAuth();
   const [email, setEmail] = useState("admin@fmarket.com");
   const [password, setPassword] = useState("password");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
  
-  // Simulate a login check (in production this would be an API call)
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError("");
-    if (!email || !password) { setError("Please fill in all fields."); return; }
-    setLoading(true);
-    // setTimeout = fake API delay (500ms)
-    setTimeout(() => { setLoading(false); onLogin(); }, 600);
+    if (!email || !password) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await signIn({ email, password });
+      navigate("/dashboard", { replace: true });
+    } catch (requestError) {
+      setError(requestError?.response?.data?.detail || "Invalid credentials.");
+    } finally {
+      setLoading(false);
+    }
   };
  
   return (
@@ -36,7 +46,7 @@ function LoginPage({ onLogin, onGoSignup }) {
  
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h1>
+          <h1 className="text-2xl font-bold text-[#022448] mb-1">Welcome back</h1>
           <p className="text-sm text-gray-500 mb-6">Enter your credentials to access your merchant dashboard</p>
  
           {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>}
@@ -52,7 +62,7 @@ function LoginPage({ onLogin, onGoSignup }) {
             </div>
  
             <Button onClick={handleLogin} disabled={loading} className="w-full justify-center py-2.5">
-              {loading ? "Signing in…" : "Sign In →"}
+                {submitting ? "Signing in…" : "Sign In →"}
             </Button>
  
             <div className="flex items-center gap-3 my-4">
@@ -73,7 +83,7 @@ function LoginPage({ onLogin, onGoSignup }) {
  
         <p className="mt-6 text-sm text-gray-500">
           Don't have an account?{" "}
-          <button onClick={onGoSignup} className="text-blue-600 font-medium hover:underline cursor-pointer">Sign up</button>
+          <button onClick={() => navigate("/signup")} className="text-blue-600 font-medium hover:underline cursor-pointer">Sign up</button>
         </p>
       </div>
       <footer className="py-4 px-8 flex justify-between items-center text-xs text-gray-400">

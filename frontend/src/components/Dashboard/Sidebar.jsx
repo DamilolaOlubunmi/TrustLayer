@@ -1,9 +1,7 @@
-import React from "react";
 import { GridIcon, TxnIcon, FlagIcon, FeedbackIcon, SettingsIcon } from "../common/Icons";
 import { ChevronIcon } from "../common/Icons";
-export default
 
-function Sidebar({ activePage, onNavigate, user }) {
+export default function Sidebar({ activePage, onNavigate, user }) {
   const navItems = [
     { id: "overview", label: "Overview", icon: GridIcon },
     { id: "transactions", label: "Transactions", icon: TxnIcon },
@@ -12,7 +10,7 @@ function Sidebar({ activePage, onNavigate, user }) {
     { id: "settings", label: "Settings", icon: SettingsIcon },
   ];
   return (
-    <aside className="w-56 min-h-screen bg-[#0f172a] flex flex-col flex-shrink-0">
+    <aside className="w-56 h-screen sticky top-0 bg-[#0f172a] flex flex-col shrink-0">
       {/* Logo area */}
       <div className="px-5 py-5 border-b border-white/10">
         <div className="flex items-center gap-2.5">
@@ -49,16 +47,20 @@ function Sidebar({ activePage, onNavigate, user }) {
  
       {/* User card at bottom */}
       <div className="p-3 border-t border-white/10">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 cursor-pointer">
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-            {user.initials}
+        <button
+          type="button"
+          onClick={() => onNavigate("profile")}
+          className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 cursor-pointer text-left"
+        >
+          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            {user?.initials || "FM"}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-white text-xs font-semibold truncate">{user.platform}</div>
-            <div className="text-slate-400 text-[10px] truncate">{user.role}</div>
+            <div className="text-white text-xs font-semibold truncate">{user?.platform || "TrustLayer"}</div>
+            <div className="text-slate-400 text-[10px] truncate">{user?.role || "Administrator"}</div>
           </div>
           <ChevronIcon size={14} className="text-slate-500" />
-        </div>
+        </button>
       </div>
     </aside>
   );

@@ -1,16 +1,18 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default
 
-function SignupPage({ onSignup, onGoLogin }) {
+function SignupPage() {
+  const navigate = useNavigate();
+  const { signUp, submitting, error, setError } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [agreed, setAgreed] = useState(false);
-  const [loading, setLoading] = useState(false);
  
   // Calculate password strength (0-4)
   const strength = useMemo(() => {
@@ -25,10 +27,19 @@ function SignupPage({ onSignup, onGoLogin }) {
   const strengthLabel = ["", "Weak", "Fair", "Moderate", "Strong"][strength];
   const strengthColor = ["", "bg-red-400", "bg-amber-400", "bg-yellow-400", "bg-blue-600"][strength];
  
-  const handleSignup = () => {
-    if (!name || !email || !password || !agreed) return;
-    setLoading(true);
-    setTimeout(() => { setLoading(false); onSignup(); }, 700);
+  const handleSignup = async () => {
+    setError("");
+    if (!name || !email || !password || !agreed) {
+      setError("Please complete every field and accept the terms.");
+      return;
+    }
+
+    try {
+      await signUp({ username: name, email, password });
+      navigate("/dashboard", { replace: true });
+    } catch (requestError) {
+      setError(requestError?.response?.data?.detail || "Unable to create your account.");
+    }
   };
  
   return (
@@ -43,9 +54,11 @@ function SignupPage({ onSignup, onGoLogin }) {
       </div>
  
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Create your account</h1>
+        <h1 className="text-2xl font-bold text-[#022448] mb-1">Create your account</h1>
         <p className="text-sm text-gray-500 mb-6">Start securing your platform with TrustLayer today</p>
  
+        {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>}
+
         <div className="space-y-4">
           <Input label="Full Name" placeholder="John Doe" value={name} onChange={setName} />
           <Input label="Work Email" placeholder="name@company.com" value={email} onChange={setEmail} type="email" />
@@ -82,8 +95,8 @@ function SignupPage({ onSignup, onGoLogin }) {
             </p>
           </div>
  
-          <Button onClick={handleSignup} disabled={loading || !agreed} className="w-full justify-center py-2.5">
-            {loading ? "Creating Account…" : "Create Account"}
+          <Button onClick={handleSignup} disabled={submitting || !agreed} className="w-full justify-center py-2.5">
+            {submitting ? "Creating Account…" : "Create Account"}
           </Button>
  
           <div className="flex items-center gap-3">
@@ -104,7 +117,7 @@ function SignupPage({ onSignup, onGoLogin }) {
  
       <p className="mt-6 text-sm text-gray-500">
         Already have an account?{" "}
-        <button onClick={onGoLogin} className="text-blue-600 font-medium hover:underline cursor-pointer">Log in</button>
+        <button onClick={() => navigate("/login")} className="text-blue-600 font-medium hover:underline cursor-pointer">Log in</button>
       </p>
     </div>
   );

@@ -1,11 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "../components/common/Button";
-import Input from "../components/common/Input";
-import { useNavigate } from "react-router-dom";
 
 export default
 
-function SettingsPage() {
+function SettingsPage({ settings = null, onSaveSettings }) {
   const [buyerWeight, setBuyerWeight] = useState(40);
   const [reviewBoundary, setReviewBoundary] = useState(0.30);
   const [blockBoundary, setBlockBoundary] = useState(0.65);
@@ -15,22 +13,84 @@ function SettingsPage() {
     whatsapp_funnel_attack: true,
     advance_fee_pattern: true,
   });
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!settings) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      setBuyerWeight(Math.round((settings.buyer_weight ?? 0.4) * 100));
+      setReviewBoundary(settings.review_threshold ?? 0.3);
+      setBlockBoundary(settings.block_threshold ?? 0.65);
+
+      const activePresets = new Set(settings.active_presets || []);
+      setPresets({
+        fake_electronics_listing: activePresets.has("fake_electronics_listing"),
+        new_vendor_high_value: activePresets.has("new_vendor_high_value"),
+        whatsapp_funnel_attack: activePresets.has("whatsapp_funnel_attack"),
+        advance_fee_pattern: activePresets.has("advance_fee_pattern"),
+      });
+    });
+  }, [settings]);
  
   const vendorWeight = 100 - buyerWeight;
   const togglePreset = k => setPresets(p => ({ ...p, [k]: !p[k] }));
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await onSaveSettings?.({
+        buyer_weight: buyerWeight / 100,
+        vendor_weight: vendorWeight / 100,
+        block_threshold: blockBoundary,
+        review_threshold: reviewBoundary,
+        active_presets: Object.entries(presets)
+          .filter(([, enabled]) => enabled)
+          .map(([key]) => key),
+        notify_email: settings?.notify_email ?? false,
+        notify_sms: settings?.notify_sms ?? false,
+        notify_phone: settings?.notify_phone ?? false,
+        callback_url: settings?.callback_url ?? null,
+      });
+      setMessage("Settings saved successfully.");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.detail || "Unable to save settings right now.");
+    } finally {
+      setSaving(false);
+    }
+  };
  
   return (
-    <div className="flex-1 overflow-y-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+    <div className="flex-1 overflow-y-auto p-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-[#022448]">Settings</h1>
         <p className="text-sm text-gray-500 mt-0.5">Configure TrustLayer behaviour for your platform</p>
       </div>
+
+      {message && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-5 py-4 mb-6 text-emerald-800 text-sm font-medium">
+          {message}
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 mb-6 text-red-700 text-sm font-medium">
+          {error}
+        </div>
+      )}
  
       {/* Model Weights */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-4">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
         <div className="flex items-center gap-2 mb-1">
           <span>⚖️</span>
-          <h2 className="font-semibold text-gray-900">Model Weights</h2>
+          <h2 className="font-semibold text-[#022448]">Model Weights</h2>
         </div>
         <p className="text-sm text-gray-500 mb-5">Adjust how much weight TrustLayer assigns to buyer-side vs vendor-side risk signals. Weights must sum to 100%.</p>
         <div className="grid grid-cols-2 gap-8 mb-4">
@@ -59,15 +119,17 @@ function SettingsPage() {
           ℹ️ <strong>Default:</strong> 40% buyer / 60% vendor — reflects Nigeria's predominantly vendor-side fraud landscape.
         </div>
         <div className="flex justify-end">
-          <Button>💾 Save Weights</Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "💾 Save Weights"}
+          </Button>
         </div>
       </div>
  
       {/* Decision Thresholds */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-4">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
         <div className="flex items-center gap-2 mb-1">
           <span>⇌</span>
-          <h2 className="font-semibold text-gray-900">Decision Thresholds</h2>
+          <h2 className="font-semibold text-[#022448]">Decision Thresholds</h2>
         </div>
         <p className="text-sm text-gray-500 mb-5">Set the score boundaries that determine when a transaction is allowed, flagged for review, or blocked.</p>
         {/* Visual threshold bar */}
@@ -109,7 +171,9 @@ function SettingsPage() {
           ))}
         </div>
         <div className="flex justify-end">
-          <Button>💾 Save Thresholds</Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "💾 Save Thresholds"}
+          </Button>
         </div>
       </div>
  
@@ -117,7 +181,7 @@ function SettingsPage() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <div className="flex items-center gap-2 mb-1">
           <span>📋</span>
-          <h2 className="font-semibold text-gray-900">Rule Presets</h2>
+          <h2 className="font-semibold text-[#022448]">Rule Presets</h2>
         </div>
         <p className="text-sm text-gray-500 mb-5">Enable or disable Nigeria-specific fraud pattern rules. Disabling a preset does not affect the ML models.</p>
         <div className="space-y-4">
@@ -135,7 +199,7 @@ function SettingsPage() {
               {/* Toggle switch */}
               <button
                 onClick={() => togglePreset(p.key)}
-                className={`w-12 h-6 rounded-full transition-colors duration-200 relative flex-shrink-0 cursor-pointer ${presets[p.key] ? "bg-blue-600" : "bg-gray-300"}`}
+                className={`w-12 h-6 rounded-full transition-colors duration-200 relative shrink-0 cursor-pointer ${presets[p.key] ? "bg-blue-600" : "bg-gray-300"}`}
               >
                 <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${presets[p.key] ? "left-6" : "left-0.5"}`} />
               </button>
@@ -143,7 +207,9 @@ function SettingsPage() {
           ))}
         </div>
         <div className="flex justify-end mt-4 pt-4 border-t border-gray-100">
-          <Button>💾 Save Presets</Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "💾 Save Presets"}
+          </Button>
         </div>
       </div>
     </div>

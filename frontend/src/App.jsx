@@ -1,101 +1,105 @@
 import './index.css';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
-// Pages
-import LandingPage    from './pages/LandingPage';
-import LoginPage      from './pages/LoginPage';
-import SignupPage     from './pages/SignupPage';
-import DashboardPage  from './pages/DashboardPage';
-import TransactionsPage from './pages/TransactionsPage';
-import FlaggedPage    from './pages/FlaggedPage';
-import FeedbackPage   from './pages/FeedbackPage';
-import SettingsPage   from './pages/SettingsPage';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
 
-// Dashboard shell components (new folder structure)
-import Sidebar from './components/Dashboard/Sidebar';
-import TopBar  from './components/Dashboard/TopBar';
-export default
+import DashboardShell from './pages/DashboardShell';
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 
-// ─── Dashboard layout wrapper ─────────────────────────────────────────────────
-// Renders the persistent sidebar + topbar and swaps the inner page component
-// based on `activePage` state — no react-router needed for the inner pages.
-function DashboardLayout({ onLogout }) {
-  const [activePage, setActivePage] = useState('overview');
+function AuthRoute({ mode }) {
+  const { isAuthenticated, loading } = useAuth();
 
-  const PAGES = {
-    overview:     DashboardPage,
-    transactions: TransactionsPage,
-    flagged:      FlaggedPage,
-    feedback:     FeedbackPage,
-    settings:     SettingsPage,
-  };
-
-  const PageComponent = PAGES[activePage] ?? DashboardPage;
-
-  return (
-    <div className="app-shell">
-      <Sidebar activePage={activePage} onNavigate={setActivePage} />
-      <div className="main-content">
-        <TopBar
-          merchantName="Fmarket"
-          activePage={activePage}
-          onLogout={onLogout}
-        />
-        <PageComponent onNavigate={setActivePage} />
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#eef0f6] text-gray-500 text-sm">
+        Restoring your session...
       </div>
-    </div>
-  );
-}
-
-// ─── Auth guard wrapper ───────────────────────────────────────────────────────
-// Sits at /dashboard/* and shows Login → (optionally Signup) → Dashboard.
-// Replace `isAuthed` logic with a real auth context / token check as needed.
-function AuthGuard() {
-  const [screen,  setScreen]  = useState('login');   // 'login' | 'signup'
-  const [isAuthed, setAuthed] = useState(false);
-
-  if (isAuthed) {
-    return (
-      <DashboardLayout onLogout={() => setAuthed(false)} />
     );
   }
 
-  if (screen === 'signup') {
-    return (
-      <SignupPage
-        onSignup={() => setAuthed(true)}
-        onGoLogin={() => setScreen('login')}
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return mode === 'signup' ? <SignupPage /> : <LoginPage />;
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<AuthRoute mode="login" />} />
+      <Route path="/signup" element={<AuthRoute mode="signup" />} />
+      <Route
+        path="/dashboard/*"
+        element={(
+          <ProtectedRoute>
+            <DashboardShell />
+          </ProtectedRoute>
+        )}
       />
-    );
-  }
-
-  return (
-    <LoginPage
-      onLogin={() => setAuthed(true)}
-      onGoSignup={() => setScreen('signup')}
-    />
+      <Route
+        path="/transactions"
+        element={(
+          <ProtectedRoute>
+            <DashboardShell />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/transactions/:id"
+        element={(
+          <ProtectedRoute>
+            <DashboardShell />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/flagged-transactions"
+        element={(
+          <ProtectedRoute>
+            <DashboardShell />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/feedback"
+        element={(
+          <ProtectedRoute>
+            <DashboardShell />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/settings"
+        element={(
+          <ProtectedRoute>
+            <DashboardShell />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/profile"
+        element={(
+          <ProtectedRoute>
+            <DashboardShell />
+          </ProtectedRoute>
+        )}
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
-// ─── Root app ─────────────────────────────────────────────────────────────────
-function App() {
+export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public landing page */}
-        <Route path="/"element={<LandingPage />} />
-
-        {/* Auth + dashboard (login gate lives here) */}
-        <Route path="/dashboard/*" element={<AuthGuard />} />
-
-        {/* Convenience: /login and /signup redirect into the auth flow */}
-        <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/signup" element={<Navigate to="/dashboard" replace />} />
-
-        {/* Catch-all: redirect unknown paths to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

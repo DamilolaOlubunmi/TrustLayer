@@ -1,7 +1,7 @@
 import React from "react";
 export default
 
-function TopRiskSignals({ transactions }) {
+function TopRiskSignals({ transactions = [] }) {
   // Count how many times each signal appears across transactions
   const counts = {};
   transactions.forEach(tx => {
@@ -14,7 +14,8 @@ function TopRiskSignals({ transactions }) {
  
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-      <h3 className="font-semibold text-gray-900 text-sm mb-4">Top Risk Signals</h3>
+      <h3 className="font-semibold text-[#022448] text-sm mb-4">Top Risk Signals</h3>
+      {!sorted.length && <div className="text-xs text-gray-500">No SHAP signals returned yet.</div>}
       <div className="space-y-3">
         {sorted.map(([feature, count]) => (
           <div key={feature} className="flex items-center gap-3">
@@ -38,7 +39,7 @@ function ShapWaterfall({ signals }) {
         const positive = s.value > 0;
         return (
           <div key={s.feature} className="flex items-center gap-3">
-            <div className="w-44 text-xs font-mono text-gray-600 text-right flex-shrink-0">{s.feature}</div>
+            <div className="w-44 text-xs font-mono text-gray-600 text-right shrink-0">{s.feature}</div>
             <div className="flex-1 flex items-center gap-2">
               {positive ? (
                 <div className="flex items-center">

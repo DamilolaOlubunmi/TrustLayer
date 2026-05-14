@@ -1,7 +1,17 @@
-import React from "react";
+import Badge from "../common/Badge";
+import ScorePill from "../common/ScorePill";
+import { formatNGN, timeAgo } from "../../utilis/utilis";
 export default
 
-function TransactionTable({ transactions, onRowClick }) {
+function TransactionTable({ transactions = [], onRowClick = () => {} }) {
+  if (!transactions.length) {
+    return (
+      <div className="rounded-lg border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
+        No transactions available yet.
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
