@@ -1,9 +1,10 @@
+from typing import Any
+
 import numpy as np  
-import shap, joblib
+import shap
 
 
-def explain(features: dict, model_path: str) -> list[dict]:
-    model = joblib.load(model_path)
+def explain(features: dict, model: Any) -> list[dict]:
     explainer = shap.TreeExplainer(model)
 
     feature_array = np.array(list(features.values())).reshape(1, -1)

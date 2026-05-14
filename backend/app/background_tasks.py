@@ -1,0 +1,100 @@
+from datetime import datetime, timezone
+
+from sqlmodel import Session, select
+
+from app.models import Platform, VendorProfile, BuyerProfile, TransactionFeatures
+from app.schema import EvaluateRequest
+from app.database import engine
+from app.services.notification_service import send_review_notification as _send_review_notification
+
+def save_features_to_store(
+    transaction_id:  str,
+    buyer_features:  dict,
+    vendor_features: dict,
+    is_fraud: bool | None = None
+) -> None:
+    with Session(engine) as db:
+        if is_fraud:
+            record = TransactionFeatures(
+                transaction_id=transaction_id,
+                is_fraud=int(is_fraud),
+                **buyer_features,
+                **vendor_features
+            )
+        else:
+            record = TransactionFeatures(
+                transaction_id=transaction_id,
+                **buyer_features,
+                **vendor_features
+            )
+
+        db.add(record)
+        db.commit()
+
+
+def update_profiles(
+    payload: EvaluateRequest,
+    final_score: float,
+    platform: Platform,
+) -> None:
+    
+    with Session(engine) as db:
+    # ── Vendor profile ────────────────────────
+        vendor_profile = db.exec(
+            select(VendorProfile).where(
+                VendorProfile.vendor_id == payload.vendor.id
+            )
+        ).first()
+
+        if vendor_profile:
+            vendor_profile.total_transactions_seen += 1
+            vendor_profile.avg_risk_score = round(
+                (vendor_profile.avg_risk_score + final_score) / 2, 4
+            )
+            vendor_profile.last_seen = datetime.now(timezone.utc)
+        else:
+            vendor_profile = VendorProfile(
+                vendor_id=payload.vendor.id,
+                platform_id=platform.id,
+                total_transactions_seen=1,
+                avg_risk_score=final_score,
+                last_seen=datetime.now(timezone.utc)
+            )
+        db.add(vendor_profile)
+
+        # ── Buyer profile ─────────────────────────
+        buyer_profile = db.exec(
+            select(BuyerProfile).where(
+                BuyerProfile.buyer_id == payload.buyer.id
+            )
+        ).first()
+
+        if buyer_profile:
+            buyer_profile.total_transactions_seen += 1
+            buyer_profile.last_seen = datetime.now(timezone.utc)
+        else:
+            buyer_profile = BuyerProfile(
+                buyer_id=payload.buyer.id,
+                platform_id=platform.id,
+                total_transactions_seen=1,
+                last_seen=datetime.now(timezone.utc)
+            )
+        db.add(buyer_profile)
+        db.commit()
+
+
+async def send_review_notification(
+    transaction_id: str,
+    payload: EvaluateRequest,
+    final_score: float,
+    reasons: list[str],
+    platform: Platform,
+) -> None:
+    await _send_review_notification(
+        transaction_id=transaction_id,
+        payload=payload,
+        final_score=final_score,
+        reasons=reasons,
+        platform=platform,
+    )
+

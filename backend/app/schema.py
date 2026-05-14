@@ -7,6 +7,7 @@ class Transaction(BaseModel):
     id: str
     amount: int
     currency: str
+    email: str
     timestamp: datetime
     payment_method: str
 
@@ -46,7 +47,7 @@ class EvaluateRequest(BaseModel):
 
 class EvaluateResponse(BaseModel):
     transaction_id: str
-    decision: str
+    decision: str   
     score: float
     confidence: str
     buyer_risk_score: float
@@ -56,6 +57,9 @@ class EvaluateResponse(BaseModel):
     rule_preset_matched: Optional[str] = None
     reasons: List[str]
     recommended_action: str
+    missing_signals: Optional[List[str]] = None
+    squad_response: Optional[dict] = None  # Include full Squad response for debugging  
+
 
 
 class FeedbackRequest(BaseModel):
@@ -120,11 +124,16 @@ class APIKeyListResponse(BaseModel):
 class UpdateProfileRequest(BaseModel):
     username: Optional[str]
     email: Optional[EmailStr]
+    phone_number: Optional[str]
 
 
 class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str
+
+
+class SquadSecretUpdateRequest(BaseModel):
+    squad_secret_key: str
 
 
 class SettingsResponse(BaseModel):
@@ -136,6 +145,7 @@ class SettingsResponse(BaseModel):
     notify_email: bool
     notify_sms: bool
     notify_phone: bool
+    callback_url: Optional[str] = None
     created_at: datetime
 
 
@@ -148,3 +158,80 @@ class SettingsUpdateRequest(BaseModel):
     notify_email: Optional[bool] = None
     notify_sms: Optional[bool] = None
     notify_phone: Optional[bool] = None
+    callback_url: Optional[str] = None
+
+
+class TrainingResultResponse(BaseModel):
+    id: int
+    platform_id: Optional[str]
+    model_type: str
+    training_status: str
+    training_data_size: Optional[int]
+    accuracy: Optional[float]
+    precision: Optional[float]
+    recall: Optional[float]
+    f1_score: Optional[float]
+    confusion_matrix: Optional[dict]
+    hyperparameters: Optional[dict]
+    metrics: Optional[dict]
+    error_message: Optional[str]
+    trained_at: Optional[datetime]
+    created_at: datetime
+
+
+class TrainingResultCreateRequest(BaseModel):
+    model_type: str
+    training_data_size: Optional[int] = None
+    accuracy: Optional[float] = None
+    precision: Optional[float] = None
+    recall: Optional[float] = None
+    f1_score: Optional[float] = None
+    confusion_matrix: Optional[dict] = None
+    hyperparameters: Optional[dict] = None
+    metrics: Optional[dict] = None
+    error_message: Optional[str] = None
+
+
+class TrainingResultUpdateRequest(BaseModel):
+    training_status: Optional[str] = None
+    training_data_size: Optional[int] = None
+    accuracy: Optional[float] = None
+    precision: Optional[float] = None
+    recall: Optional[float] = None
+    f1_score: Optional[float] = None
+    confusion_matrix: Optional[dict] = None
+    hyperparameters: Optional[dict] = None
+    metrics: Optional[dict] = None
+    error_message: Optional[str] = None
+    trained_at: Optional[datetime] = None
+
+
+class ReviewDecisionResponse(BaseModel):
+    transaction_id: str
+    platform_id: str
+    decision: str
+    final_score: float
+    reasons: List[str]
+    expires_at: datetime
+    reviewed_at: Optional[datetime] = None
+    notified_at: Optional[datetime] = None
+    status: str
+
+
+class ReviewActionResponse(BaseModel):
+    status: str
+    transaction_id: str
+    decision: str
+    reviewed_at: datetime
+    whitelist_created: bool = False
+
+
+class TransactionWhitelistResponse(BaseModel):
+    id: int
+    buyer_id: str
+    vendor_id: str
+    platform_id: str
+    payment_method: str
+    max_amount: float
+    expires_at: datetime
+    created_at: datetime

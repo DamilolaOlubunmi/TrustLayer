@@ -4,7 +4,7 @@ from app.schema import EvaluateRequest
 from datetime import datetime, timedelta
 from app.models import Transaction
 
-def fake_electroncis_listing(payload: EvaluateRequest) -> float | None:
+def fake_electronics_listing(payload: EvaluateRequest) -> float | None:
     if payload.vendor:
         vendor = payload.vendor
         if (

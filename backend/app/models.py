@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import Column
@@ -14,17 +14,21 @@ class Platform(SQLModel, table=True):
     id: str = Field(primary_key=True)  # use UUID
     name: str
     email: str  # REQUIRED
+    squad_secret_key: Optional[str] = None  # For Squad integration
+    phone_number: Optional[str] = None
     password_hash: Optional[str] = None
     is_active: bool = Field(default=True)
 
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Relationship
-    api_keys: List["APIKey"] = Relationship(back_populates="platform")
+    api_key: List["APIKey"] = Relationship(back_populates="platform")
     transactions: List["Transaction"] = Relationship(back_populates="platform")
     feedbacks: List["Feedback"] = Relationship(back_populates="platform")
     buyers: List["BuyerProfile"] = Relationship(back_populates="platform")
     vendors: List["VendorProfile"] = Relationship(back_populates="platform")
+    review_decisions: List["ReviewDecision"] = Relationship(back_populates="platform")
+    whitelist_entries: List["TransactionWhitelist"] = Relationship(back_populates="platform")
     # One-to-one relationship: each platform has a settings record
     settings: Optional["Settings"] = Relationship(back_populates="platform")
 
@@ -48,7 +52,7 @@ class APIKey(SQLModel, table=True):
     is_active: bool = Field(default=True)
 
     # Relationship
-    platform: Optional[Platform] = Relationship(back_populates="api_keys")
+    platform: Optional[Platform] = Relationship(back_populates="api_key")
 
 
 
@@ -96,16 +100,19 @@ class Transaction(SQLModel, table=True):
     escalated_to_llm: int = Field(default=0)
 
     # JSON field (queryable)
-    reasons: Optional[dict] = Field(
+    reasons: Optional[List[str]] = Field(
         default=None,
         sa_column=Column(JSON)
     )
 
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    squad_status: Optional[str] = Field(default="Incomplete")  # new field to track Squad payment status
 
     # Relationships
     feedbacks: List["Feedback"] = Relationship(back_populates="transaction")
     platform: Optional["Platform"] = Relationship(back_populates="transactions")
+    review_decision: Optional["ReviewDecision"] = Relationship(back_populates="transaction")
 
 
 # =========================
@@ -142,6 +149,7 @@ class VendorProfile(SQLModel, table=True):
     platform_id: str = Field(foreign_key="platforms.id")
 
     total_transactions_seen: int = Field(default=0)
+    total_completed_transactions: int = Field(default=0)
     total_fraud_flags: int = Field(default=0)
     avg_risk_score: float = Field(default=0)
 
@@ -192,7 +200,9 @@ class TransactionFeatures(SQLModel, table=True):
     category_risk_score: Optional[float] = None
     has_completed_any_txn: Optional[int] = None
 
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    is_fraud: Optional[int] = None  # Label for training
+
+    created_at: datetime = Field(default_factory=datetime.now)
 
 
 # =========================
@@ -220,7 +230,78 @@ class Settings(SQLModel, table=True):
     notify_sms: bool = Field(default=False)
     notify_phone: bool = Field(default=False)
 
+    callback_url: Optional[str] = None  # For redirecting to custom checkout flow
+
     created_at: datetime = Field(default_factory=datetime.now)
 
     # Relationship
     platform: Optional[Platform] = Relationship(back_populates="settings")
+
+
+# =========================
+# Training Results Table
+# =========================
+class TrainingResult(SQLModel, table=True):
+    __tablename__ = "training_results"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    # Training metadata
+    model_type: str  # "buyer", "vendor", or "general"
+    training_status: str = Field(default="in_progress")  # in_progress | success | failed
+    training_data_size: Optional[int] = None  # Number of samples used
+
+    # Performance metrics
+    accuracy: Optional[float] = None
+    precision: Optional[float] = None
+    recall: Optional[float] = None
+    f1_score: Optional[float] = None
+    roc_auc: Optional[float] = None
+    pr_auc: Optional[float] = None
+
+    # Additional data (stored as JSON)
+    confusion_matrix: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    hyperparameters: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    metrics: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+
+    # Error handling
+    error_message: Optional[str] = None
+
+    # Timestamps
+    trained_time_seconds: Optional[int] = None  # When training completed (in seconds)
+    created_at: datetime = Field(default_factory=datetime.now)  # When record was created
+
+
+class ReviewDecision(SQLModel, table=True):
+    __tablename__ = "review_decisions"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    transaction_id: str = Field(foreign_key="transactions.id", unique=True, index=True)
+    platform_id: str = Field(foreign_key="platforms.id", index=True)
+
+    decision: str = Field(default="REVIEW")
+    review_token: str = Field(index=True, unique=True)
+    expires_at: datetime
+    notified_at: Optional[datetime] = None
+    reviewed_at: Optional[datetime] = None
+
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    # Relationship
+    transaction: Optional["Transaction"] = Relationship(back_populates="review_decision")
+    platform: Optional["Platform"] = Relationship(back_populates="review_decisions")
+
+
+class TransactionWhitelist(SQLModel, table=True):
+    __tablename__ = "transaction_whitelist"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    buyer_id: str = Field(index=True)
+    vendor_id: str = Field(index=True)
+    platform_id: str = Field(foreign_key="platforms.id", index=True)
+    payment_method: str = Field(index=True)
+    max_amount: float = Field(index=True)
+    expires_at: datetime = Field(index=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    platform: Optional["Platform"] = Relationship(back_populates="whitelist_entries")

@@ -11,7 +11,7 @@ load_dotenv()
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
-def explain_with_llm(shap_signals: list, payload: EvaluateRequest) -> dict | Any:
+async def explain_with_llm(shap_signals: list, payload: EvaluateRequest) -> dict | Any:
     """
     shap_signals: [{"feature": "vendor_account_age", "value": 0.28}, ...]
     Returns: ["Vendor account is 4 days old...", "Listing price is 67%..."]
@@ -43,7 +43,7 @@ def explain_with_llm(shap_signals: list, payload: EvaluateRequest) -> dict | Any
     )
     return message.content[0].text
 
-def escalate_to_llm(payload: EvaluateRequest, buyer_score: float, vendor_score: float) -> dict | Any:
+async def escalate_to_llm(payload: EvaluateRequest, buyer_score: float, vendor_score: float) -> dict | Any:
     
     system_prompt = """
     You are TrustLayer, an AI fraud analyst specialising in Nigerian digital payment fraud. 
@@ -110,15 +110,15 @@ def escalate_to_llm(payload: EvaluateRequest, buyer_score: float, vendor_score: 
     BUYER:
     - Account age: {payload.buyer.account_age_days} days
     - Total past transactions: {payload.buyer.total_past_transactions or "unknown"}
-    - Average past spend: NGN {payload.buyer.avg_transaction_amount:,} if payload.buyer.avg_transaction_amount else "unknown"}
+    - Average past spend: NGN {payload.buyer.avg_transaction_amount if payload.buyer.avg_transaction_amount else "unknown"}
     - Past dispute count: {payload.buyer.past_dispute_count or "unknown"}
 
     VENDOR:
     - Account age: {payload.vendor.account_age_days} days
     - Completed transactions: {payload.vendor.total_completed_transactions or "unknown"}
     - Category: {payload.vendor.category or "unknown"}
-    - Listing price: NGN {payload.vendor.listing_price:,} if payload.vendor.listing_price else "unknown"}
-    - Category average price: NGN {payload.vendor.avg_category_price:,} if payload.vendor.avg_category_price else "unknown"}
+    - Listing price: NGN {payload.vendor.listing_price if payload.vendor.listing_price else "unknown"}
+    - Category average price: NGN {payload.vendor.avg_category_price if payload.vendor.avg_category_price else "unknown"}
 
     SESSION:
     - Arrival source: {payload.session.arrival_source if payload.session else "unknown"}
