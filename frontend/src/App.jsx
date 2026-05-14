@@ -6,7 +6,7 @@ import { useState } from 'react';
 import LandingPage    from './pages/LandingPage';
 import LoginPage      from './pages/LoginPage';
 import SignupPage     from './pages/SignupPage';
-import DashboardPage  from './pages/DashboardPage';
+import OverviewPage  from './pages/DashboardPage';
 import TransactionsPage from './pages/TransactionsPage';
 import FlaggedPage    from './pages/FlaggedPage';
 import FeedbackPage   from './pages/FeedbackPage';
@@ -24,7 +24,7 @@ function DashboardLayout({ onLogout }) {
   const [activePage, setActivePage] = useState('overview');
 
   const PAGES = {
-    overview:     DashboardPage,
+    overview:     OverviewPage,
     transactions: TransactionsPage,
     flagged:      FlaggedPage,
     feedback:     FeedbackPage,

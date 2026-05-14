@@ -1,6 +1,7 @@
 import React from "react";
 import { GridIcon, TxnIcon, FlagIcon, FeedbackIcon, SettingsIcon } from "../common/Icons";
 import { ChevronIcon } from "../common/Icons";
+import { MOCK_USER } from "../../data/mock/transactions";
 export default
 
 function Sidebar({ activePage, onNavigate, user }) {
@@ -51,11 +52,11 @@ function Sidebar({ activePage, onNavigate, user }) {
       <div className="p-3 border-t border-white/10">
         <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 cursor-pointer">
           <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-            {user.initials}
+            {MOCK_USER.initials}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-white text-xs font-semibold truncate">{user.platform}</div>
-            <div className="text-slate-400 text-[10px] truncate">{user.role}</div>
+            <div className="text-white text-xs font-semibold truncate">{MOCK_USER.platform}</div>
+            <div className="text-slate-400 text-[10px] truncate">{MOCK_USER.role}</div>
           </div>
           <ChevronIcon size={14} className="text-slate-500" />
         </div>
