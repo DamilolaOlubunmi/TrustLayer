@@ -263,6 +263,7 @@ def get_settings(session: Session = Depends(get_session), current_user: Platform
         "notify_sms": settings.notify_sms,
         "notify_phone": settings.notify_phone,
         "created_at": settings.created_at,
+        "callback_url": settings.callback_url,
     }
 
 
@@ -298,6 +299,9 @@ def update_settings(payload: SettingsUpdateRequest, session: Session = Depends(g
     if payload.notify_phone is not None:
         settings.notify_phone = payload.notify_phone
         changed = True
+    if payload.callback_url is not None:
+        settings.callback_url = payload.callback_url
+        changed = True
 
     if changed:
         session.add(settings)
@@ -314,4 +318,5 @@ def update_settings(payload: SettingsUpdateRequest, session: Session = Depends(g
         "notify_sms": settings.notify_sms,
         "notify_phone": settings.notify_phone,
         "created_at": settings.created_at,
+        "callback_url": settings.callback_url,
     }

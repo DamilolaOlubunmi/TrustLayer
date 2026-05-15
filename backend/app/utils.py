@@ -13,12 +13,8 @@ class Models:
 
 
 def fetch_platform_id(request: Request, db: Session) -> str:
-    print(f"Request headers: {json.dumps(dict(request.headers), indent=2)}")
     auth_header = request.headers.get("x-api-key", "")
-    print(f"Authorization header: {auth_header}")
     api_key = auth_header.replace("Bearer ", "").strip()
-    print(f"Extracted API key: {api_key}")
-    print(f"type of api_key: {type(api_key)}")
 
     # Look up the platform that owns this key
     api_key = db.exec(

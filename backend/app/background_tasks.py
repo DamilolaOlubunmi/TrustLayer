@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from sqlmodel import Session, select
+from sqlalchemy.exc import IntegrityError
 
 from app.models import Platform, VendorProfile, BuyerProfile, TransactionFeatures
 from app.schema import EvaluateRequest
@@ -40,11 +41,12 @@ def update_profiles(
     
     with Session(engine) as db:
     # ── Vendor profile ────────────────────────
-        vendor_profile = db.exec(
-            select(VendorProfile).where(
-                VendorProfile.vendor_id == payload.vendor.id
-            )
-        ).first()
+        with db.no_autoflush:
+            vendor_profile = db.exec(
+                select(VendorProfile).where(
+                    VendorProfile.vendor_id == payload.vendor.id
+                )
+            ).first()
 
         if vendor_profile:
             vendor_profile.total_transactions_seen += 1
@@ -52,33 +54,71 @@ def update_profiles(
                 (vendor_profile.avg_risk_score + final_score) / 2, 4
             )
             vendor_profile.last_seen = datetime.now(timezone.utc)
+            
         else:
-            vendor_profile = VendorProfile(
-                vendor_id=payload.vendor.id,
-                platform_id=platform.id,
-                total_transactions_seen=1,
-                avg_risk_score=final_score,
-                last_seen=datetime.now(timezone.utc)
-            )
+            try:
+                vendor_profile = VendorProfile(
+                    vendor_id=payload.vendor.id,
+                    platform_id=platform.id,
+                    total_transactions_seen=1,
+                    total_completed_transactions=0,
+                    total_fraud_flags=0,
+                    avg_risk_score=final_score,
+                    last_seen=datetime.now(timezone.utc),
+                )
+
+            except IntegrityError:
+                db.rollback()
+
+                with db.no_autoflush:
+                    vendor_profile = db.exec(
+                        select(VendorProfile).where(
+                            VendorProfile.vendor_id == payload.vendor.id
+                        )
+                    ).first()
+
         db.add(vendor_profile)
 
         # ── Buyer profile ─────────────────────────
-        buyer_profile = db.exec(
-            select(BuyerProfile).where(
-                BuyerProfile.buyer_id == payload.buyer.id
-            )
-        ).first()
+        with db.no_autoflush:
+            buyer_profile = db.exec(
+                select(BuyerProfile).where(
+                    BuyerProfile.buyer_id == payload.buyer.id
+                )
+            ).first()
 
         if buyer_profile:
             buyer_profile.total_transactions_seen += 1
             buyer_profile.last_seen = datetime.now(timezone.utc)
-        else:
-            buyer_profile = BuyerProfile(
-                buyer_id=payload.buyer.id,
-                platform_id=platform.id,
-                total_transactions_seen=1,
-                last_seen=datetime.now(timezone.utc)
+            buyer_profile.avg_risk_score = round(
+                (buyer_profile.avg_risk_score + final_score) / 2, 4
             )
+            buyer_profile.avg_amount = round(
+                (buyer_profile.avg_amount + payload.transaction.amount) / 2, 2
+            )
+            if payload.buyer.past_dispute_count is not None:
+                buyer_profile.total_disputes += payload.buyer.past_dispute_count
+        else:
+            try:
+                buyer_profile = BuyerProfile(
+                    buyer_id=payload.buyer.id,
+                    platform_id=platform.id,
+                    total_transactions_seen=1,
+                    avg_risk_score=final_score,
+                    avg_amount=payload.transaction.amount,
+                    total_disputes=payload.buyer.past_dispute_count or 0,
+                    last_seen=datetime.now(timezone.utc)
+                )
+            except IntegrityError:
+                db.rollback()
+
+                with db.no_autoflush:
+                    buyer_profile = db.exec(
+                        select(BuyerProfile).where(
+                            BuyerProfile.buyer_id == payload.buyer.id
+                        )
+                    ).first()
+          
         db.add(buyer_profile)
         db.commit()
 

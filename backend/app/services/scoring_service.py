@@ -13,13 +13,9 @@ def run_models(
     buyer_model  = Models.buyer_model
     vendor_model = Models.vendor_model
 
-    print("Buyer features:", buyer_features)
     
     buyer_array  = np.array(list(buyer_features.values())).reshape(1, -1)
     vendor_array = np.array(list(vendor_features.values())).reshape(1, -1)
-
-    print("Buyer Array:", buyer_array, end="\n\n")
-    print("Buyer array shape:", buyer_array.shape, end="\n\n")
 
 
     with concurrent.futures.ThreadPoolExecutor() as executor:

@@ -16,6 +16,7 @@ function SettingsPage({ settings = null, onSaveSettings }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [callbackUrl, setCallbackUrl] = useState("");
 
   useEffect(() => {
     if (!settings) {
@@ -26,6 +27,7 @@ function SettingsPage({ settings = null, onSaveSettings }) {
       setBuyerWeight(Math.round((settings.buyer_weight ?? 0.4) * 100));
       setReviewBoundary(settings.review_threshold ?? 0.3);
       setBlockBoundary(settings.block_threshold ?? 0.65);
+      setCallbackUrl(settings.callback_url ?? "");
 
       const activePresets = new Set(settings.active_presets || []);
       setPresets({
@@ -57,8 +59,9 @@ function SettingsPage({ settings = null, onSaveSettings }) {
         notify_email: settings?.notify_email ?? false,
         notify_sms: settings?.notify_sms ?? false,
         notify_phone: settings?.notify_phone ?? false,
-        callback_url: settings?.callback_url ?? null,
+        callback_url: callbackUrl || null,
       });
+      
       setMessage("Settings saved successfully.");
     } catch (requestError) {
       setError(requestError?.response?.data?.detail || "Unable to save settings right now.");
@@ -209,6 +212,35 @@ function SettingsPage({ settings = null, onSaveSettings }) {
         <div className="flex justify-end mt-4 pt-4 border-t border-gray-100">
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "💾 Save Presets"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Callback URL */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mt-6">
+        <div className="flex items-center gap-2 mb-1">
+          <span>🔗</span>
+          <h2 className="font-semibold text-[#022448]">Callback URL</h2>
+        </div>
+
+        <p className="text-sm text-gray-500 mb-5">
+          Configure the webhook URL TrustLayer should call after a successful payment initiation.
+        </p>
+
+        <div className="flex gap-3 items-center">
+          <input
+            type="url"
+            placeholder="https://yourplatform.com/payment/callback"
+            value={callbackUrl}
+            onChange={(e) => setCallbackUrl(e.target.value)}
+            className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "💾 Save Url"}
           </Button>
         </div>
       </div>

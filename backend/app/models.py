@@ -74,7 +74,7 @@ class Transaction(SQLModel, table=True):
     buyer_id: Optional[str] = None
     buyer_account_age_days: Optional[int] = None
     buyer_total_past_txns: Optional[int] = None
-    buyer_avg_amount: Optional[int] = None
+    buyer_avg_amount: Optional[float] = None
     buyer_dispute_count: Optional[int] = None
 
     # Vendor fields
@@ -82,8 +82,8 @@ class Transaction(SQLModel, table=True):
     vendor_account_age_days: Optional[int] = None
     vendor_completed_txns: Optional[int] = None
     vendor_category: Optional[str] = None
-    listing_price: Optional[int] = None
-    avg_category_price: Optional[int] = None
+    listing_price: Optional[float] = None
+    avg_category_price: Optional[float] = None
 
     # Session fields
     arrival_source: Optional[str] = None
@@ -169,7 +169,7 @@ class BuyerProfile(SQLModel, table=True):
 
     total_transactions_seen: int = Field(default=0)
     total_disputes: int = Field(default=0)
-    avg_amount: int = Field(default=0)
+    avg_amount: float = Field(default=0)
     avg_risk_score: float = Field(default=0)
 
     last_seen: Optional[datetime] = None

@@ -41,6 +41,8 @@ async def evaluate(
     
     if not payload.transaction.id:
         payload.transaction.id = f"txn_{int(datetime.now().timestamp() * 1000)}{shortuuid.uuid()}"
+    else:
+        payload.transaction.id += f"_{shortuuid.uuid()[:12]}"  # Append unique suffix to ensure uniqueness across retries
     
     platform_settings = db.exec(
     select(Settings).where(
@@ -58,7 +60,7 @@ async def evaluate(
     reasons: list[str] = []
     squad_data: dict[str, object] = {}
     decision: str | None = None
-    is_fraud: bool | None = None
+    is_fraud: bool = False  # Default to False, will set to True if BLOCK or REVIEW later
 
     # ── 1. Whitelist check ────────────────────
     whitelist_entry = get_active_whitelist_entry(
@@ -102,13 +104,13 @@ async def evaluate(
             squad_status="whitelisted",
             created_at=datetime.now(timezone.utc),
         )
-        is_fraud = False
         try:
             db.add(transaction)
             db.commit()
-        except Exception:
+        except Exception as e:
             db.rollback()
-            raise HTTPException(500, "Failed to save whitelisted transaction")
+            print("SAVE ERROR:", repr(e))
+            raise HTTPException(500, f"Failed to save transaction: {str(e)}")
         
         if platform.squad_secret_key and platform_settings.callback_url:
             try:
@@ -221,7 +223,6 @@ async def evaluate(
 
         # Build coroutines based on decision
         llm_coroutine = explain_with_llm(shap_signals, payload, decision, final_score, confidence)
-        print(platform.squad_secret_key, platform_settings.callback_url)  # Debug print to check Squad credentials and callback URL
 
         if decision == "ALLOW" and platform.squad_secret_key and platform_settings.callback_url:
             squad_coroutine = initiate_payment(
@@ -306,9 +307,10 @@ async def evaluate(
     try:
         db.add(transaction)
         db.commit()
-    except Exception:
+    except Exception as e:
         db.rollback()
-        raise HTTPException(500, "Failed to save transaction")
+        print("SAVE ERROR:", repr(e))
+        raise HTTPException(500, f"Failed to save transaction: {str(e)}")
 
     # ── 11. Background tasks ──────────────────
     background_tasks.add_task(
@@ -349,6 +351,6 @@ async def evaluate(
         reasons=reasons,
         recommended_action=recommended_action,
         missing_signals=missing_signals,
-        squad_response=squad_data  # Include full Squad response for debugging
+        squad_response=squad_data  
     )
     
