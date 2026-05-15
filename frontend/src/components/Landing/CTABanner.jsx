@@ -15,10 +15,10 @@ function CTABanner() {
              className="px-8 py-3 bg-white text-[#1A56DB] text-[14px] font-semibold rounded-lg hover:bg-[#f0f4ff] transition-colors h-[48px] inline-flex items-center justify-center shadow-sm">
             Get API Access
           </Link>
-          <a href={`/documentation`}
+          <Link to="/docs"
              className="px-8 py-3 text-white text-[14px] font-semibold border border-white/60 rounded-lg hover:bg-white/10 transition-colors h-[48px] inline-flex items-center justify-center">
             Read Documentation
-          </a>
+          </Link>
         </div>
       </div>
     </section>

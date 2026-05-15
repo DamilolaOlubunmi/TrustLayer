@@ -44,9 +44,19 @@ export default function DashboardShell() {
   const [loadError, setLoadError] = useState("");
 
   const displayUser = useMemo(() => buildDisplayUser(user), [user]);
+  const isDocsPage = location.pathname.startsWith("/docs");
 
   useEffect(() => {
     let isMounted = true;
+
+    if (isDocsPage) {
+      setTransactions([]);
+      setLoadError("");
+      setLoadingTransactions(false);
+      return () => {
+        isMounted = false;
+      };
+    }
 
     const loadTransactions = async () => {
       setLoadingTransactions(true);
@@ -79,7 +89,7 @@ export default function DashboardShell() {
     return () => {
       isMounted = false;
     };
-  }, [signOut]);
+  }, [signOut, isDocsPage]);
 
   const handleSelectTransaction = useCallback(
     (tx) => {
@@ -224,7 +234,9 @@ export default function DashboardShell() {
             </div>
           )}
 
-          {loadingTransactions && !transactions.length ? (
+          {isDocsPage ? (
+            renderPage()
+          ) : loadingTransactions && !transactions.length ? (
             <div className="flex-1 flex items-center justify-center text-sm text-gray-500">
               Loading dashboard data...
             </div>

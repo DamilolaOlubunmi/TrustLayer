@@ -8,6 +8,7 @@ import DashboardShell from './pages/DashboardShell';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import DocsPage from './pages/DocsPage';
 
 function AuthRoute({ mode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -70,6 +71,14 @@ function AppRoutes() {
         element={(
           <ProtectedRoute>
             <DashboardShell />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/docs"
+        element={(
+          <ProtectedRoute>
+            <DocsPage />
           </ProtectedRoute>
         )}
       />

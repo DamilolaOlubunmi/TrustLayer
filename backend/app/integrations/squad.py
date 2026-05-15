@@ -3,7 +3,7 @@ import httpx
 import hmac
 import hashlib
 
-import uuid
+from app.integrations.http_client import http_client
 
 SQUAD_SANDBOX_URL = "https://sandbox-api-d.squadco.com"
 SQUAD_LIVE_URL = "https://api-d.squadco.com"
@@ -31,12 +31,12 @@ async def initiate_payment(
         "callback_url": callback_url,
     }
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(
-            f"{SQUAD_SANDBOX_URL}/transaction/initiate",
-            json=payload,
-            headers=headers
-        )
+    # async with httpx.AsyncClient(timeout=120.0) as client:
+    response = await http_client.post(
+        f"{SQUAD_SANDBOX_URL}/transaction/initiate",
+        json=payload,
+        headers=headers
+    )
     
     try:
         data = response.json()
@@ -50,7 +50,10 @@ async def initiate_payment(
 
 
 
-def validate_squad_signature(body: bytes, encrypted_body_header: str, secret_key: str) -> bool:
+def validate_squad_signature(body: bytes, encrypted_body_header: str | None, secret_key: str) -> bool:
+
+    if not encrypted_body_header or not secret_key:
+        return False
 
     # The x-squad-encrypted-body header is the HMAC of the entire body
     computed = hmac.new(
@@ -61,48 +64,3 @@ def validate_squad_signature(body: bytes, encrypted_body_header: str, secret_key
     
     return hmac.compare_digest(computed, encrypted_body_header.upper())
 
-
-# async def send_sms(
-#     squad_secret_key: str,
-#     phone_number: str,
-#     message: str
-# ) -> dict:
-
-#     headers = {
-#         "Authorization": f"Bearer {squad_secret_key}",
-#         "Content-Type": "application/json"
-#     }
-
-#     payload = {
-#         "sender_id": uuid.uuid4().hex[:20], 
-#         "messages": [
-#             {
-#                 "phone_number": phone_number,
-#                 "message": message
-#             }
-#         ]
-#     }
-
-#     async with httpx.AsyncClient(
-#         timeout=30.0
-#     ) as client:
-
-#         response = await client.post(
-#             f"{SQUAD_SANDBOX_URL}/sms/send/instant",
-#             json=payload,
-#             headers=headers
-#         )
-
-#     if response.status_code != 200:
-#         raise Exception(
-#             f"Squad SMS HTTP Error: {response.text}"
-#         )
-
-#     data = response.json()
-
-#     if not data.get("status"):
-#         raise Exception(
-#             f"Squad SMS failed: {data.get('errors')}"
-#         )
-
-#     return data

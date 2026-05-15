@@ -137,6 +137,7 @@ export default function DemoWidget() {
       id: `txn_demo_${Date.now()}`,
       amount: parseInt(form.amount.replace(/,/g, ''), 10) || 0,
       currency: 'NGN',
+      email: 'user@demo.ng',
       timestamp: new Date().toISOString(),
       payment_method: 'card',
     },

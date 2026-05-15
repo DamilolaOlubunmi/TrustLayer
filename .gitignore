@@ -55,3 +55,5 @@ coverage.xml
 
 *.ipynb
 data/
+logs/
+test.py

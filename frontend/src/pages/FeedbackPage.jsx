@@ -21,6 +21,7 @@ export default function FeedbackPage({ currentUser = {}, onSubmitFeedback }) {
   useEffect(() => {
     fetchFeedbacks();
   }, []);
+  
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const txIdFromLocation = location.state?.transactionId || searchParams.get("transaction") || "";

@@ -221,7 +221,7 @@ class PipelineEvaluateTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.decision, "REVIEW")
         self.assertEqual(result.recommended_action, "Trigger step-up authentication or queue for manual review")
         self.assertTrue(result.squad_response)
-        self.assertEqual(result.squad_response, {"error": "Transaction not approved by LLM, so Squad not called"})
+        self.assertEqual(result.squad_response, {"error": "Transaction not approved, Squad not called"})
         self.assertEqual(len(background_tasks.tasks), 3)
         self.assertIn(background_tasks.tasks[2][0], {"send_review_notification", "AsyncMock"})
         self.assertEqual(background_tasks.tasks[2][1][0], payload.transaction.id)

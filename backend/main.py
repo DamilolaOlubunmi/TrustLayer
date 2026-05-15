@@ -1,3 +1,6 @@
+import os
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -5,9 +8,28 @@ from contextlib import asynccontextmanager
 from app.database import create_db_and_tables
 from app.api.profile_routes import router as profile_router
 from app.api.dashboard_routes import router as dashboard_router
+from app.api.squad_routes import router as squad_router
 from app.api.review_routes import api_router as review_api_router
 from app.api.review_routes import browser_router as review_browser_router
 from app.utils import load_models
+
+os.makedirs("logs", exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+
+    format=(
+        "%(asctime)s | "
+        "%(levelname)s | "
+        "%(name)s | "
+        "%(message)s"
+    ),
+
+    handlers=[
+        logging.FileHandler("logs/app.log"),
+        logging.StreamHandler()
+    ]
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -40,6 +62,7 @@ app.include_router(dashboard_router)
 # mount review routes
 app.include_router(review_browser_router)
 app.include_router(review_api_router)
+app.include_router(squad_router)
 
 
 @app.get("/")

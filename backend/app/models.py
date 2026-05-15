@@ -230,7 +230,7 @@ class Settings(SQLModel, table=True):
     notify_sms: bool = Field(default=False)
     notify_phone: bool = Field(default=False)
 
-    callback_url: Optional[str] = Field(default="https://goggle.com")  # For redirecting to custom checkout flow
+    callback_url: Optional[str] = Field(default="https://www.goggle.com")  # For redirecting to custom checkout flow
 
     created_at: datetime = Field(default_factory=datetime.now)
 

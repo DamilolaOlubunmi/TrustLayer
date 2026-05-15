@@ -4,7 +4,7 @@ import Logo from "../../assets/trustlayer-logo.png";
 
 const NAV_LINKS = [
   { label: 'How it Works', href: '#how-it-works' },
-  { label: 'Documentation', href: '#documentation' },
+  { label: 'Documentation', href: '/docs' },
   { label: 'Dashboard', href: '/dashboard' },
 ];
 
@@ -18,10 +18,23 @@ function Navbar() {
         </Link>
         <nav className="hidden md:flex items-center gap-6">
           {NAV_LINKS.map(link => (
-            <a key={link.label} href={link.href}
-               className="text-[#43474e] hover:text-[#0d50d5] transition-colors text-[14px] font-semibold">
-              {link.label}
-            </a>
+            link.href.startsWith('/') ? (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="text-[#43474e] hover:text-[#0d50d5] transition-colors text-[14px] font-semibold"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-[#43474e] hover:text-[#0d50d5] transition-colors text-[14px] font-semibold"
+              >
+                {link.label}
+              </a>
+            )
           ))}
         </nav>
         <div className="hidden md:flex items-center gap-3">
@@ -45,10 +58,25 @@ function Navbar() {
       {open && (
         <div className="md:hidden border-t border-[#c4c6cf] bg-white px-4 py-3 space-y-2">
           {NAV_LINKS.map(link => (
-            <Link key={link.label} to={link.href} onClick={() => setOpen(false)}
-               className="block py-2 text-[14px] font-semibold text-[#43474e] hover:text-[#0d50d5]">
-              {link.label}
-            </Link>
+            link.href.startsWith('/') ? (
+              <Link
+                key={link.label}
+                to={link.href}
+                onClick={() => setOpen(false)}
+                className="block py-2 text-[14px] font-semibold text-[#43474e] hover:text-[#0d50d5]"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className="block py-2 text-[14px] font-semibold text-[#43474e] hover:text-[#0d50d5]"
+              >
+                {link.label}
+              </a>
+            )
           ))}
           <Link to='/signup' className="block w-full bg-[#0d50d5] text-white text-[14px] font-semibold py-2.5 rounded-lg mt-2 text-center">
             Get Started
