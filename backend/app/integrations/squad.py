@@ -24,7 +24,7 @@ async def initiate_payment(
 
     payload = {
         "transaction_ref": transaction_ref,
-        "amount": amount,
+        "amount": amount * 100, # Convert to kobo for Squad
         "email": email,
         "currency": currency,
         "initiate_type": "inline",
@@ -62,47 +62,47 @@ def validate_squad_signature(body: bytes, encrypted_body_header: str, secret_key
     return hmac.compare_digest(computed, encrypted_body_header.upper())
 
 
-async def send_sms(
-    squad_secret_key: str,
-    phone_number: str,
-    message: str
-) -> dict:
+# async def send_sms(
+#     squad_secret_key: str,
+#     phone_number: str,
+#     message: str
+# ) -> dict:
 
-    headers = {
-        "Authorization": f"Bearer {squad_secret_key}",
-        "Content-Type": "application/json"
-    }
+#     headers = {
+#         "Authorization": f"Bearer {squad_secret_key}",
+#         "Content-Type": "application/json"
+#     }
 
-    payload = {
-        "sender_id": uuid.uuid4().hex[:20], 
-        "messages": [
-            {
-                "phone_number": phone_number,
-                "message": message
-            }
-        ]
-    }
+#     payload = {
+#         "sender_id": uuid.uuid4().hex[:20], 
+#         "messages": [
+#             {
+#                 "phone_number": phone_number,
+#                 "message": message
+#             }
+#         ]
+#     }
 
-    async with httpx.AsyncClient(
-        timeout=30.0
-    ) as client:
+#     async with httpx.AsyncClient(
+#         timeout=30.0
+#     ) as client:
 
-        response = await client.post(
-            f"{SQUAD_SANDBOX_URL}/sms/send/instant",
-            json=payload,
-            headers=headers
-        )
+#         response = await client.post(
+#             f"{SQUAD_SANDBOX_URL}/sms/send/instant",
+#             json=payload,
+#             headers=headers
+#         )
 
-    if response.status_code != 200:
-        raise Exception(
-            f"Squad SMS HTTP Error: {response.text}"
-        )
+#     if response.status_code != 200:
+#         raise Exception(
+#             f"Squad SMS HTTP Error: {response.text}"
+#         )
 
-    data = response.json()
+#     data = response.json()
 
-    if not data.get("status"):
-        raise Exception(
-            f"Squad SMS failed: {data.get('errors')}"
-        )
+#     if not data.get("status"):
+#         raise Exception(
+#             f"Squad SMS failed: {data.get('errors')}"
+#         )
 
-    return data
+#     return data

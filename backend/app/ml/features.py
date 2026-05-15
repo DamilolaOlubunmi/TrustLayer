@@ -1,13 +1,12 @@
 from datetime import datetime, timedelta
 
-from fastapi import Request, Depends
+from fastapi import Request
 from sqlmodel import Session, select, func
 
 from app.ml.constants import BUYER_CATEGORY_RISK, VENDOR_CATEGORY_RISK
 from app.models import BuyerProfile, VendorProfile, Transaction
 from app.schema import EvaluateRequest
 from app.utils import fetch_platform_id
-from app.database import get_session
 
 def build_buyer_features(payload: EvaluateRequest, request: Request, db: Session) -> dict:
     if not payload.transaction or not payload.buyer:
@@ -75,7 +74,7 @@ def build_buyer_features(payload: EvaluateRequest, request: Request, db: Session
     arrival_source_risk = 1 if session and session.arrival_source in ["whatsapp_link", "external_link"] else 0
 
 
-    session_duration_flag = 1 if session and session.time_on_page_seconds < 15 else 0,
+    session_duration_flag = 1 if session and session.time_on_page_seconds < 15 else 0
 
 
 
@@ -159,10 +158,7 @@ def build_vendor_features(payload: EvaluateRequest, request: Request, db: Sessio
 
     listing_price = vendor.listing_price if vendor.listing_price else 0
 
-    category_avg_price = vendor_profile.get(
-        "category_avg_price",
-        max(listing_price, 1)
-    )
+    category_avg_price = vendor.avg_category_price if vendor.avg_category_price else "unknown"
 
     listing_price_ratio = (
         vendor.listing_price / vendor.avg_category_price

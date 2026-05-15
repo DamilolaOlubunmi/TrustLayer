@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime, timezone
 
-import joblib
+import shortuuid
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
 
@@ -36,6 +36,29 @@ async def evaluate(
     platform: Platform
 ) -> EvaluateResponse:
     
+    if not payload.transaction or not payload.buyer or not payload.vendor:
+        raise HTTPException(400, "Transaction, Buyer, and Vendor information must be provided")
+    
+    if not payload.transaction.id:
+        payload.transaction.id = f"txn_{int(datetime.now().timestamp() * 1000)}{shortuuid.uuid()}"
+    
+    platform_settings = db.exec(
+    select(Settings).where(
+        Settings.platform_id == platform.id
+        )
+    ).first()
+
+
+    if not platform_settings:
+        raise HTTPException(
+            500,
+            "Platform settings missing"
+        )
+    
+    reasons: list[str] = []
+    squad_data: dict[str, object] = {}
+    decision: str | None = None
+    is_fraud: bool | None = None
 
     # ── 1. Whitelist check ────────────────────
     whitelist_entry = get_active_whitelist_entry(
@@ -56,8 +79,19 @@ async def evaluate(
             currency=payload.transaction.currency,
             timestamp=payload.transaction.timestamp,
             payment_method=payload.transaction.payment_method,
+            
             buyer_id=payload.buyer.id,
             vendor_id=payload.vendor.id,
+            buyer_account_age_days=payload.buyer.account_age_days,
+            vendor_account_age_days=payload.vendor.account_age_days,
+            buyer_total_past_txns=payload.buyer.total_past_transactions,
+            buyer_avg_amount=payload.buyer.avg_transaction_amount,
+            vendor_completed_txns=payload.vendor.total_completed_transactions,
+            buyer_dispute_count=payload.buyer.past_dispute_count,
+            vendor_category=payload.vendor.category,
+            listing_price=payload.vendor.listing_price,
+            avg_category_price=payload.vendor.avg_category_price,
+
             final_score=0.0,
             confidence="HIGH",
             decision="ALLOW",
@@ -68,18 +102,38 @@ async def evaluate(
             squad_status="whitelisted",
             created_at=datetime.now(timezone.utc),
         )
+        is_fraud = False
         try:
             db.add(transaction)
             db.commit()
         except Exception:
             db.rollback()
             raise HTTPException(500, "Failed to save whitelisted transaction")
+        
+        if platform.squad_secret_key and platform_settings.callback_url:
+            try:
+                squad_data = await initiate_payment(
+                    squad_secret_key=platform.squad_secret_key,
+                    transaction_ref=payload.transaction.id,
+                    amount=payload.transaction.amount, # Since squad accepts payments in kobo
+                    email=payload.transaction.email,
+                    callback_url=platform_settings.callback_url,
+                )
+            except Exception as e:
+                squad_data = {"error": f"Squad integration failed: {str(e)}"}
 
         background_tasks.add_task(
             update_profiles,
             payload,
             0.0,
             platform,
+        )
+        background_tasks.add_task(
+            save_features_to_store,
+            payload.transaction.id,
+            buyer_features=build_buyer_features(payload, request, db),
+            vendor_features=build_vendor_features(payload, request, db),
+            is_fraud=is_fraud
         )
 
         return EvaluateResponse(
@@ -95,12 +149,8 @@ async def evaluate(
             reasons=["Matched active temporary whitelist"],
             recommended_action="Proceed with payment",
             missing_signals=[],
-            squad_response={},
+            squad_response=squad_data,
         )
-
-    reasons: list[str] = []
-    squad_data: dict[str, object] = {}
-    decision: str | None = None
 
     # ── 2. Validation gate ────────────────────
     missing_signals = run_validation_gate(payload)
@@ -114,18 +164,6 @@ async def evaluate(
 
     # ── 5. Run models in parallel ─────────────
     buyer_score, vendor_score = run_models(buyer_features, vendor_features)
-
-    platform_settings = db.exec(
-    select(Settings).where(
-        Settings.platform_id == platform.id
-        )
-    ).first()
-
-    if not platform_settings:
-        raise HTTPException(
-            500,
-            "Platform settings missing"
-        )
 
     # ── 6. Aggregate scores ───────────────────
     final_score, primary_signal = aggregate_scores(
@@ -160,8 +198,17 @@ async def evaluate(
                     email=payload.transaction.email,
                     callback_url=platform_settings.callback_url,
                 )
-            except Exception:
-                squad_data = {}
+            except Exception as e:
+                squad_data = {"error": f"Squad integration failed: {str(e)}"}
+                
+        elif decision == "ALLOW":
+            squad_data = {"error": "Transaction approved, but Squad credentials are not configured"}
+
+        else:
+            is_fraud = True
+            reasons = reasons or ["Transaction flagged by LLM for review or blocking"]
+            squad_data = {"error": "Transaction not approved by LLM, so Squad not called"}
+
 
     else:
         # HIGH/MEDIUM confidence path — SHAP + LLM explain
@@ -173,7 +220,8 @@ async def evaluate(
         decision = determine_decision(final_score, platform_settings)
 
         # Build coroutines based on decision
-        llm_coroutine = explain_with_llm(shap_signals, payload)
+        llm_coroutine = explain_with_llm(shap_signals, payload, decision, final_score, confidence)
+        print(platform.squad_secret_key, platform_settings.callback_url)  # Debug print to check Squad credentials and callback URL
 
         if decision == "ALLOW" and platform.squad_secret_key and platform_settings.callback_url:
             squad_coroutine = initiate_payment(
@@ -192,21 +240,26 @@ async def evaluate(
             )
 
             reasons = results[0] if isinstance(results[0], list) else ["error: could not generate explanation for this"]
-            squad_data = results[1] if isinstance(results[1], dict) else {}
+            squad_data = results[1] if isinstance(results[1], dict) else {"error": f"Squad integration failed: {str(results[1])}"}
 
         elif decision == "ALLOW":
-            reasons = ["Transaction approved, but Squad credentials are not configured"]
-            squad_data = {}
-
-        else:
-            # BLOCK or REVIEW — no Squad call needed
-            # Just run LLM alone
             try:
                 llm_reasons = await llm_coroutine
                 reasons = llm_reasons if isinstance(llm_reasons, list) else [str(llm_reasons)]
-            except Exception:
-                reasons = ["error: could not generate explanation for this"]
-            squad_data = {}
+            except Exception as e:
+                reasons = [f"error: could not generate explanation for this", "LLM error: " + str(e)]
+            squad_data = {"error": "Transaction approved, but Squad credentials are not configured"}
+
+        else:
+            # BLOCK or REVIEW — no Squad call needed    
+            # Just run LLM alone
+            is_fraud = True
+            try:
+                llm_reasons = await llm_coroutine
+                reasons = llm_reasons if isinstance(llm_reasons, list) else [str(llm_reasons)]
+            except Exception as e:
+                reasons = [f"error: could not generate explanation for this", "LLM error: " + str(e)]
+            squad_data = {"error": "Transaction not approved by LLM, so Squad not called"}
 
     # ── 9. Recommended action ─────────────────
     recommended_action_map = {
@@ -224,8 +277,19 @@ async def evaluate(
         currency=payload.transaction.currency,
         timestamp=payload.transaction.timestamp,
         payment_method=payload.transaction.payment_method,
+
         buyer_id=payload.buyer.id,
         vendor_id=payload.vendor.id,
+        buyer_account_age_days=payload.buyer.account_age_days,
+        vendor_account_age_days=payload.vendor.account_age_days,
+        buyer_total_past_txns=payload.buyer.total_past_transactions,
+        buyer_avg_amount=payload.buyer.avg_transaction_amount,
+        vendor_completed_txns=payload.vendor.total_completed_transactions,
+        buyer_dispute_count=payload.buyer.past_dispute_count,
+        vendor_category=payload.vendor.category,
+        listing_price=payload.vendor.listing_price,
+        avg_category_price=payload.vendor.avg_category_price,
+
         buyer_score=round(buyer_score, 4),
         vendor_score=round(vendor_score, 4),
         final_score=final_score,
@@ -251,7 +315,8 @@ async def evaluate(
         save_features_to_store,
         payload.transaction.id,
         buyer_features,
-        vendor_features
+        vendor_features,
+        is_fraud
     )
     background_tasks.add_task(
         update_profiles,

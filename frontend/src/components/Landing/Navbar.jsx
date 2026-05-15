@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
+import Logo from "../../assets/trustlayer-logo.png";
 
 const NAV_LINKS = [
   { label: 'How it Works', href: '#how-it-works' },
@@ -13,7 +14,7 @@ function Navbar() {
     <header className="bg-[#faf9fc] sticky top-0 z-50 border-b border-[#c4c6cf] shadow-sm">
       <div className="flex justify-between items-center w-full px-4 md:px-8 py-1 max-w-[1600px] mx-auto min-h-[64px]">
         <Link to="#" className="text-[24px] font-bold text-[#0d50d5] tracking-tight" style={{ fontFamily: 'Hanken Grotesk, sans-serif' }}>
-          TrustLayer
+          <img src={Logo} alt="TrustLayer Logo" width={200} />
         </Link>
         <nav className="hidden md:flex items-center gap-6">
           {NAV_LINKS.map(link => (

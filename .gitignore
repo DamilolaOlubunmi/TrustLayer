@@ -54,4 +54,4 @@ coverage.xml
 .pytest_cache/
 
 *.ipynb
-
+data/

@@ -1,19 +1,6 @@
-# TrustLayer API Backend
+# TrustLayer Backend
 
-A FastAPI-based fraud detection and risk assessment platform that evaluates transactions, manages platform integrations, and provides comprehensive authentication and API key management.
-
----
-
-## Table of Contents
-
-1. [Architecture Overview](#architecture-overview)
-2. [Schemas](#schemas)
-3. [Database Models](#database-models)
-4. [Authentication & Security](#authentication--security)
-5. [API Endpoints](#api-endpoints)
-6. [Business Rules](#business-rules)
-7. [Setup & Installation](#setup--installation)
-8. [Environment Configuration](#environment-configuration)
+Backend API and machine learning infrastructure for real-time fraud detection on Nigerian payment platforms.
 
 ---
 
@@ -591,7 +578,7 @@ class TransactionFeatures(SQLModel, table=True):
 ```json
 {
   "transaction_id": "txn_123",
-  "outcome": "fraudulent",
+  "is_fraud": true,
   "reported_by": "platform_admin",
   "reported_at": "2026-05-12T11:00:00"
 }
@@ -603,7 +590,7 @@ class TransactionFeatures(SQLModel, table=True):
   "transaction_id": "txn_123"
 }
 ```
-**Function**: Submit feedback on transaction outcome. Used for model training and accuracy tracking.
+**Function**: Submit feedback on a transaction outcome. The request is stored in the `feedback` table immediately, then a background task updates the matching `TransactionFeatures.is_fraud` label so retraining uses the corrected outcome.
 
 ---
 
@@ -848,11 +835,14 @@ transaction_features (id[PK], transaction_id[FK,INDEXED], ...)
 3. Call with `payload` and optional `db` Session
 
 ### Testing
-Run with:
+The backend includes focused unit tests for the feedback workflow and training-label relabeling logic.
+
+Run them with:
 ```bash
-pytest
+python -m unittest discover -s tests -v
 ```
-(Test suite currently not fully implemented)
+
+The current test coverage uses a temporary SQLite database and stubs external notification integrations so the tests stay fast and deterministic.
 
 ---
 

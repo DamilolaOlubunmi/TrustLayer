@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
 import { useAuth } from "../context/AuthContext";
+import Logo from "../assets/trustlayer-logo.png";
 
 export default
 
@@ -44,13 +45,8 @@ function SignupPage() {
  
   return (
     <div className="min-h-screen bg-[#eef0f6] flex flex-col items-center justify-center px-4">
-      <div className="flex items-center gap-2.5 mb-8">
-        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-md">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-        </div>
-        <span className="text-[#0f172a] font-bold text-xl">TrustLayer</span>
+      <div className="flex items-center gap-2.5">
+        <img src={Logo} alt="TrustLayer Logo" width={200} />
       </div>
  
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
@@ -60,7 +56,7 @@ function SignupPage() {
         {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>}
 
         <div className="space-y-4">
-          <Input label="Full Name" placeholder="John Doe" value={name} onChange={setName} />
+          <Input label="Business Name" placeholder="John Doe Ventures" value={name} onChange={setName} />
           <Input label="Work Email" placeholder="name@company.com" value={email} onChange={setEmail} type="email" />
  
           <div>

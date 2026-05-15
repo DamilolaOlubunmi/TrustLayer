@@ -51,7 +51,7 @@ function OverviewPage({ transactions = [], onSelectTx = () => {} }) {
 
       {!transactions.length && (
         <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-white px-5 py-4 text-sm text-gray-500">
-          No transactions have been returned by the backend yet. Once your API exposes evaluated transactions, this dashboard will render them here.
+          No transactions have been processed yet. Once your API exposes evaluated transactions, this dashboard will render them here.
         </div>
       )}
  

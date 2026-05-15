@@ -63,14 +63,35 @@ class EvaluateResponse(BaseModel):
 
 
 class FeedbackRequest(BaseModel):
+    """Submit feedback for a transaction.
+    
+    Args:
+        transaction_id: ID of the transaction
+        is_fraud: Whether the transaction is fraudulent (True) or legitimate (False)
+        reported_by: User/entity reporting the feedback
+        reported_at: Timestamp of the report
+    """
     transaction_id: str
-    outcome: str
+    is_fraud: bool  # True if fraudulent, False if legitimate
     reported_by: str
     reported_at: datetime
 
 class FeedbackResponse(BaseModel):
     status: str
-    transaction_id: str 
+    transaction_id: str
+    message: str
+
+class FeedbackItem(BaseModel):
+    id: Optional[int] = None
+    transaction_id: Optional[str] = None
+    is_fraud: bool
+    reported_by: Optional[str] = None
+    reported_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+class FeedbackListResponse(BaseModel):
+    total: int
+    feedbacks: List[FeedbackItem] 
 
 class TransactionListItem(BaseModel):
     id: str
@@ -122,9 +143,9 @@ class APIKeyListResponse(BaseModel):
 
 
 class UpdateProfileRequest(BaseModel):
-    username: Optional[str]
-    email: Optional[EmailStr]
-    phone_number: Optional[str]
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
 
 
 class ChangePasswordRequest(BaseModel):

@@ -11,7 +11,7 @@ function DecisionBreakdown({ transactions = [] }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
       <h3 className="font-semibold text-[#022448] text-sm mb-4">Decision Breakdown</h3>
-      {!total && <div className="text-xs text-gray-500 mb-3">No backend transactions yet.</div>}
+      {!total && <div className="text-xs text-gray-500 mb-3">No transactions yet.</div>}
       {/* Visual stacked bar */}
       <div className="flex h-3 rounded-full overflow-hidden mb-3 gap-0.5">
         <div className="bg-emerald-500 rounded-l-full" style={{ width: `${pct(allowed)}%` }} />

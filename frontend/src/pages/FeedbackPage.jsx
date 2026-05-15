@@ -1,11 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
+import { getAllFeedbackRequest } from "../api";
 
-export default
+export default function FeedbackPage({ currentUser = {}, onSubmitFeedback }) {
+  const fetchFeedbacks = async () => {
+    setFeedbacksLoading(true);
+    setFeedbacksError("");
+    try {
+      const data = await getAllFeedbackRequest();
+      setFeedbacks(data.feedbacks || []);
+    } catch (err) {
+      setFeedbacksError(err?.response?.data?.detail || "Failed to load feedback history");
+    } finally {
+      setFeedbacksLoading(false);
+    }
+  };
 
-function FeedbackPage({ currentUser = {}, onSubmitFeedback }) {
+  useEffect(() => {
+    fetchFeedbacks();
+  }, []);
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const txIdFromLocation = location.state?.transactionId || searchParams.get("transaction") || "";
@@ -15,6 +30,9 @@ function FeedbackPage({ currentUser = {}, onSubmitFeedback }) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [feedbacksLoading, setFeedbacksLoading] = useState(true);
+  const [feedbacksError, setFeedbacksError] = useState("");
 
   const handleSubmit = async () => {
     const resolvedTxId = txId || txIdFromLocation;
@@ -27,20 +45,37 @@ function FeedbackPage({ currentUser = {}, onSubmitFeedback }) {
     setLoading(true);
 
     try {
+      // Convert outcome to is_fraud boolean for backend API
+      const is_fraud = outcome === "fraudulent";
+      
       await onSubmitFeedback?.({
         transaction_id: resolvedTxId,
-        outcome,
+        is_fraud,
         reported_by: currentUser.email || currentUser.name || "merchant",
         reported_at: new Date().toISOString(),
-        notes,
       });
 
       setSubmitted(true);
       setTxId("");
       setNotes("");
+      setOutcome("fraudulent");
       setTimeout(() => setSubmitted(false), 2500);
+      // Refresh feedback list after submission
+      fetchFeedbacks();
     } catch (requestError) {
-      setError(requestError?.response?.data?.detail || "Unable to submit feedback right now.");
+      // Handle Pydantic validation errors (422 responses)
+      const errorData = requestError?.response?.data;
+      if (Array.isArray(errorData?.detail)) {
+        // Pydantic validation error list
+        const errorMessages = errorData.detail
+          .map((err) => `${err.loc?.join(".")} - ${err.msg}`)
+          .join("; ");
+        setError(`Validation error: ${errorMessages}`);
+      } else if (typeof errorData?.detail === "string") {
+        setError(errorData.detail);
+      } else {
+        setError("Unable to submit feedback right now.");
+      }
     } finally {
       setLoading(false);
     }
@@ -80,7 +115,6 @@ function FeedbackPage({ currentUser = {}, onSubmitFeedback }) {
             <select value={outcome} onChange={e => setOutcome(e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
               <option value="fraudulent">Fraudulent — TrustLayer missed this</option>
               <option value="legitimate">Legitimate — TrustLayer was wrong to block</option>
-              <option value="disputed">Disputed — Outcome unresolved</option>
             </select>
           </div>
         </div>
@@ -107,13 +141,78 @@ function FeedbackPage({ currentUser = {}, onSubmitFeedback }) {
         <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
           <h2 className="font-semibold text-[#022448]">Reported Feedback</h2>
           <div className="flex gap-2">
-            <button className="text-gray-400 hover:text-gray-600 cursor-pointer">☰</button>
-            <button className="text-gray-400 hover:text-gray-600 cursor-pointer">⬇</button>
+            <button 
+              onClick={fetchFeedbacks}
+              className="text-gray-400 hover:text-gray-600 cursor-pointer text-lg"
+              title="Refresh"
+            >
+              🔄
+            </button>
           </div>
         </div>
-        <div className="px-5 py-6 text-sm text-gray-500">
-          Feedback history will appear here once the backend exposes historical feedback records.
-        </div>
+
+        {feedbacksError && (
+          <div className="px-5 py-4 text-red-700 text-sm bg-red-50 border-t border-red-200">
+            {feedbacksError}
+          </div>
+        )}
+
+        {feedbacksLoading ? (
+          <div className="px-5 py-12 text-center text-gray-400 text-sm">
+            Loading feedback history...
+          </div>
+        ) : feedbacks.length === 0 ? (
+          <div className="px-5 py-12 text-center text-gray-400 text-sm">
+            No feedback submitted yet. Report transaction outcomes above to help improve model accuracy.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-5 py-3 text-left font-semibold text-gray-700">Transaction ID</th>
+                  <th className="px-5 py-3 text-left font-semibold text-gray-700">Outcome</th>
+                  <th className="px-5 py-3 text-left font-semibold text-gray-700">Reported By</th>
+                  <th className="px-5 py-3 text-left font-semibold text-gray-700">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {feedbacks.map((feedback, index) => (
+                  <tr key={feedback.id || index} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="px-5 py-3 font-mono text-xs text-blue-600">
+                      {feedback.transaction_id || "—"}
+                    </td>
+                    <td className="px-5 py-3">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          feedback.is_fraud
+                            ? "bg-red-100 text-red-700"
+                            : "bg-emerald-100 text-emerald-700"
+                        }`}
+                      >
+                        {feedback.is_fraud ? "Fraudulent" : "Legitimate"}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-gray-600 text-sm">
+                      {feedback.reported_by || "—"}
+                    </td>
+                    <td className="px-5 py-3 text-gray-500 text-xs">
+                      {feedback.reported_at
+                        ? new Date(feedback.reported_at).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

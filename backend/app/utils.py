@@ -3,7 +3,9 @@ from fastapi import Request, HTTPException
 import joblib
 from sqlmodel import Session, select
 
-from app.models import Platform, TrainingResult
+import json
+
+from app.models import APIKey, TrainingResult
 
 class Models:
     buyer_model  = None
@@ -11,18 +13,22 @@ class Models:
 
 
 def fetch_platform_id(request: Request, db: Session) -> str:
-    auth_header = request.headers.get("Authorization", "")
+    print(f"Request headers: {json.dumps(dict(request.headers), indent=2)}")
+    auth_header = request.headers.get("x-api-key", "")
+    print(f"Authorization header: {auth_header}")
     api_key = auth_header.replace("Bearer ", "").strip()
+    print(f"Extracted API key: {api_key}")
+    print(f"type of api_key: {type(api_key)}")
 
     # Look up the platform that owns this key
-    platform = db.exec(
-        select(Platform).where(Platform.api_key == api_key)
+    api_key = db.exec(
+        select(APIKey).where(APIKey.key == api_key)
     ).first()
 
-    if not platform:
+    if not api_key:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
-    return platform.id
+    return api_key.platform_id
 
 def load_models():
     try: 

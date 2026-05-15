@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 
 import anthropic
 from dotenv import load_dotenv
@@ -10,38 +11,152 @@ from app.schema import EvaluateRequest
 load_dotenv()
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+logger = logging.getLogger(__name__)
 
-async def explain_with_llm(shap_signals: list, payload: EvaluateRequest) -> dict | Any:
+
+def _fallback_llm_decision(reason: str) -> dict[str, Any]:
+  return {
+    "decision": "REVIEW",
+    "confidence": "MEDIUM",
+    "reasons": [reason],
+    "primary_signal": "buyer",
+  }
+
+
+def _extract_json_object(raw: str) -> dict[str, Any] | None:
+  text = raw.strip()
+  if not text:
+    return None
+
+  if text.startswith("```"):
+    text = text.strip("`")
+    if "\n" in text:
+      text = text.split("\n", 1)[1]
+
+  try:
+    parsed = json.loads(text)
+    return parsed if isinstance(parsed, dict) else None
+  except json.JSONDecodeError:
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+      return None
+
+    try:
+      parsed = json.loads(text[start : end + 1])
+      return parsed if isinstance(parsed, dict) else None
+    except json.JSONDecodeError:
+      return None
+
+async def explain_with_llm(
+    shap_signals: list,
+    payload: EvaluateRequest,
+    decision: str,
+    final_score: float,
+    confidence: str
+) -> list[str]:
     """
-    shap_signals: [{"feature": "vendor_account_age", "value": 0.28}, ...]
-    Returns: ["Vendor account is 4 days old...", "Listing price is 67%..."]
+    Convert SHAP fraud signals into human-readable explanations.
+
+    Returns:
+        list[str]
     """
+
     prompt = f"""
-    You are a fraud analyst writing a clear explanation for a platform operator.
-    The following signals drove a fraud risk decision for a Nigerian marketplace
-    transaction.
-    Convert each signal into one plain-English sentence a non-technical person can
-    understand.
-    Return ONLY a JSON array of strings. No preamble.
-    Transaction context:
-    - Amount: NGN {payload.transaction.amount:,}
-    - Vendor account age: {payload.vendor.account_age_days} days
-    - Buyer average spend: NGN {payload.buyer.get("avg_transaction_amount", "unknown"):,}
-    Top risk signals (feature name: SHAP contribution):
-    {json.dumps(shap_signals, indent=2)}
-    """
+        You are an AI assistant helping explain a fraud-risk model's decision to a platform operator.
 
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+Your task:
+- Explain WHY the model produced the given score.
+- Do NOT assume the transaction is fraudulent.
+- Do NOT exaggerate risk.
+- If signals are low-risk or normal, say so clearly.
+- Only describe what the provided data actually suggests.
+- Be balanced, factual, and concise.
+- Return ONLY a valid JSON array of strings.
+- Do NOT return markdown.
+- Do NOT wrap response in ```json.
+- Keep each explanation under 25 words.
 
-    message = client.messages.create(
-    model="claude-haiku-4-5",
-    max_tokens=3000,
-    messages=[{
-        "role": "user",
-        "content": prompt
-    }]
-    )
-    return message.content[0].text
+Transaction Outcome:
+- Decision: {decision}
+- Final Risk Score: {round(final_score, 4)}
+- Confidence: {confidence}
+
+Full Transaction Context:
+- Amount: NGN {payload.transaction.amount:,}
+- Vendor: {payload.vendor}
+- Buyer: {payload.buyer}
+
+Feature Contributions:
+{json.dumps(shap_signals, indent=2)}
+
+Important:
+- A high account age generally indicates stronger trust.
+- A low account age may increase uncertainty.
+- Explain both positive and negative contributing signals appropriately.
+- Do not invent facts not present in the data.
+    You are a helpful assistant that translates technical fraud signals into plain English explanations for a non-technical audience."""
+
+    
+    
+    
+    try:
+
+        client = anthropic.Anthropic(
+            api_key=ANTHROPIC_API_KEY
+        )
+
+        message = client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=500,
+            temperature=0.2,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+
+        raw_response = message.content[0].text.strip()
+
+        # Remove accidental markdown wrappers if Claude adds them
+        cleaned_response = (
+            raw_response
+            .replace("```json", "")
+            .replace("```", "")
+            .strip()
+        )
+
+        parsed = json.loads(cleaned_response)
+
+        # Ensure valid structure
+        if not isinstance(parsed, list):
+            raise ValueError(
+                "LLM response is not a list"
+            )
+
+        # Ensure every item is string
+        parsed = [
+            str(item).strip()
+            for item in parsed
+            if str(item).strip()
+        ]
+
+        return parsed
+
+    except Exception as e:
+
+        logging.error(
+            f"LLM explanation generation failed: {str(e)}"
+        )
+
+        # Safe fallback explanations
+        return [
+           "Could not generate explanation for this transaction",
+            "LLM error: " + str(e)
+        ]
+            
 
 async def escalate_to_llm(payload: EvaluateRequest, buyer_score: float, vendor_score: float) -> dict | Any:
     
@@ -125,7 +240,6 @@ async def escalate_to_llm(payload: EvaluateRequest, buyer_score: float, vendor_s
     - Time on page: {payload.session.time_on_page_seconds if payload.session else "unknown"} seconds
     - Device type: {payload.session.device_type if payload.session else "unknown"}
     - IP country: {payload.session.ip_country if payload.session else "unknown"}
-    - VPN detected: {payload.session.ip_is_vpn if payload.session else "unknown"}
 
     Return your verdict as a JSON object only.
     """
@@ -139,5 +253,14 @@ async def escalate_to_llm(payload: EvaluateRequest, buyer_score: float, vendor_s
         messages=[{"role": "user", "content": user_prompt}]
     )
 
-    raw = response.content[0].text.strip()
-    return json.loads(raw)
+    raw = "".join(
+      block.text for block in response.content
+      if getattr(block, "type", None) == "text" and getattr(block, "text", None)
+    ).strip()
+
+    parsed = _extract_json_object(raw)
+    if parsed is None:
+      logger.warning("LLM returned non-JSON escalation response: %r", raw)
+      return _fallback_llm_decision("Unable to parse LLM verdict; defaulted to manual review")
+
+    return parsed

@@ -172,6 +172,11 @@ export const submitFeedbackRequest = async (payload) => {
   return response.data;
 };
 
+export const getAllFeedbackRequest = async () => {
+  const response = await apiClient.get('/api/v1/feedback');
+  return response.data;
+};
+
 export const evaluateTransactionRequest = async (payload, apiKey = localStorage.getItem(API_KEY_KEY)) => {
   const headers = apiKey ? { 'X-API-Key': apiKey } : {};
   const response = await axios.post(`${BASE_URL}/api/v1/evaluate`, payload, {

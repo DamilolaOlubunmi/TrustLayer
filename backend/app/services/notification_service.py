@@ -28,6 +28,14 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _as_utc_aware(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def generate_review_token() -> str:
     return str(uuid.uuid4())
 
@@ -69,6 +77,7 @@ def get_active_whitelist_entry(
         return None
 
     now = current_time or utcnow()
+    now = _as_utc_aware(now) or utcnow()
     amount_value = float(amount)
 
     statement = (
@@ -125,7 +134,10 @@ def apply_review_action(
     if not review_decision:
         raise ValueError("Review token not found")
 
-    if review_decision.expires_at <= now:
+    now = _as_utc_aware(now) or utcnow()
+    review_expires_at = _as_utc_aware(review_decision.expires_at)
+
+    if review_expires_at is not None and review_expires_at <= now:
         raise ValueError("Review token has expired")
 
     if review_decision.reviewed_at or review_decision.decision in {"ALLOW", "BLOCK"}:

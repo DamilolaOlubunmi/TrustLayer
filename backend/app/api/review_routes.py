@@ -12,6 +12,7 @@ from app.database import get_session
 from app.models import Platform, ReviewDecision
 from app.schema import ReviewActionResponse
 from app.services.notification_service import (
+    _as_utc_aware,
     apply_review_action,
     get_review_decision_by_token,
 )
@@ -63,10 +64,10 @@ def _render_review_page(review: ReviewDecision) -> str:
 
             <div style="display:flex;gap:12px;flex-wrap:wrap;">
                             <form action="/review/{escape(review.review_token)}/allow" method="post" style="margin:0;">
-                <button type="submit" style="border:0;border-radius:10px;padding:12px 18px;background:#0f9d58;color:#fff;font-weight:700;cursor:pointer;">ALLOW</button>
+                <button type="submit" style="border:0;border-radius:10px;padding:12px 18px;background:#0f9d58;margin:10px;color:#fff;font-weight:700;cursor:pointer;">ALLOW</button>
               </form>
                             <form action="/review/{escape(review.review_token)}/block" method="post" style="margin:0;">
-                <button type="submit" style="border:0;border-radius:10px;padding:12px 18px;background:#d93025;color:#fff;font-weight:700;cursor:pointer;">BLOCK</button>
+                <button type="submit" style="border:0;border-radius:10px;padding:12px 18px;background:#d93025;margin:10px;color:#fff;font-weight:700;cursor:pointer;">BLOCK</button>
               </form>
             </div>
           </div>
@@ -142,7 +143,8 @@ def review_page(token: str, session: Session = Depends(get_session)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review token not found")
 
     now = _utcnow()
-    if review.expires_at <= now:
+    review_expires_at = _as_utc_aware(review.expires_at)
+    if review_expires_at is not None and review_expires_at <= now:
         return HTMLResponse(
             "<h1>Review token expired</h1><p>Please submit manual feedback instead.</p>",
             status_code=status.HTTP_410_GONE,

@@ -170,9 +170,9 @@ function TransactionDetailsPage({ transactionId, transactions = [], onReviewActi
 
       <div className="grid grid-cols-4 gap-6 mb-8">
         {[
-          { label: "Final Score", value: transaction.score?.toFixed?.(2) ?? "—" },
-          { label: "Buyer Risk Score", value: transaction.buyer_risk_score?.toFixed?.(2) ?? "—" },
-          { label: "Vendor Risk Score", value: transaction.vendor_risk_score?.toFixed?.(2) ?? "—" },
+          { label: "Final Score", value: transaction.score ? `${Math.round(transaction.score * 100)}` : "—" },
+          { label: "Buyer Risk Score", value: transaction.buyer_risk_score ? `${Math.round(transaction.buyer_risk_score * 100)}` : "—" },
+          { label: "Vendor Risk Score", value: transaction.vendor_risk_score ? `${Math.round(transaction.vendor_risk_score * 100)}` : "—" },
           { label: "Confidence", value: transaction.confidence || "—" },
         ].map((item) => (
           <div key={item.label} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">

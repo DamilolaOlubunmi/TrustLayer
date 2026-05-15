@@ -1,5 +1,6 @@
 import { GridIcon, TxnIcon, FlagIcon, FeedbackIcon, SettingsIcon } from "../common/Icons";
 import { ChevronIcon } from "../common/Icons";
+import Logo from "../../assets/trustlayer-logo-dark.png";
 
 export default function Sidebar({ activePage, onNavigate, user }) {
   const navItems = [
@@ -12,15 +13,10 @@ export default function Sidebar({ activePage, onNavigate, user }) {
   return (
     <aside className="w-56 h-screen sticky top-0 bg-[#0f172a] flex flex-col shrink-0">
       {/* Logo area */}
-      <div className="px-5 py-5 border-b border-white/10">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-          </div>
+      <div className="px-5 pb-5 border-b border-white/10">
+        <div className="flex flex-col items-center">
+          <img src={Logo} alt="TrustLayer Logo" width={200} />
           <div>
-            <div className="text-white font-bold text-sm leading-tight">TrustLayer</div>
             <div className="text-blue-300/70 text-[10px] tracking-widest uppercase">Merchant Dashboard</div>
           </div>
         </div>

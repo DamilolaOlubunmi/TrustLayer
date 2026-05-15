@@ -36,6 +36,21 @@ function ProfilePage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
+  const getErrorMessage = (error, fallback) => {
+    const detail = error?.response?.data?.detail;
+    if (typeof detail === "string") {
+      return detail;
+    }
+    if (Array.isArray(detail)) {
+      const message = detail.map((item) => item?.msg).filter(Boolean).join(" ");
+      return message || fallback;
+    }
+    if (detail && typeof detail === "object") {
+      return detail?.message || fallback;
+    }
+    return fallback;
+  };
+
   useEffect(() => {
     let isMounted = true;
     const loadProfile = async () => {
@@ -59,7 +74,7 @@ function ProfilePage() {
         if (isMounted) {
           setNotice({
             type: "error",
-            message: requestError?.response?.data?.detail || "Unable to load profile details.",
+            message: getErrorMessage(requestError, "Unable to load profile details."),
           });
         }
       } finally {
@@ -112,7 +127,7 @@ function ProfilePage() {
     } catch (requestError) {
       setNotice({
         type: "error",
-        message: requestError?.response?.data?.detail || "Unable to update profile details.",
+        message: getErrorMessage(requestError, "Unable to update profile details."),
       });
     } finally {
       setSavingProfile(false);
@@ -143,7 +158,7 @@ function ProfilePage() {
     } catch (requestError) {
       setNotice({
         type: "error",
-        message: requestError?.response?.data?.detail || "Unable to change password.",
+        message: getErrorMessage(requestError, "Unable to change password."),
       });
     } finally {
       setSavingPassword(false);
@@ -161,7 +176,7 @@ function ProfilePage() {
     } catch (requestError) {
       setNotice({
         type: "error",
-        message: requestError?.response?.data?.detail || "Unable to regenerate API key.",
+        message: getErrorMessage(requestError, "Unable to regenerate API key."),
       });
     } finally {
       setRegenerating(false);
@@ -183,7 +198,7 @@ function ProfilePage() {
     } catch (requestError) {
       setNotice({
         type: "error",
-        message: requestError?.response?.data?.detail || "Unable to update Squad secret key.",
+        message: getErrorMessage(requestError, "Unable to update Squad secret key."),
       });
     } finally {
       setSavingSecret(false);

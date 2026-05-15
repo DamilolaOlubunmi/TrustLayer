@@ -1,11 +1,13 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from sqlmodel import Session, select
+from sqlmodel import Session, select, desc
+from datetime import datetime
 
 from app.api.auth import get_api_key_platform, get_current_user
 from app.database import get_session
-from app.models import Platform, Transaction
+from app.models import Platform, Transaction, Feedback
 from app.pipeline import evaluate
-from app.schema import EvaluateRequest, EvaluateResponse, FeedbackRequest
+from app.schema import EvaluateRequest, EvaluateResponse, FeedbackRequest, FeedbackResponse, FeedbackListResponse, FeedbackItem
+from app.background_tasks import update_transaction_label
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
 
@@ -96,13 +98,110 @@ async def evaluate_transaction(
     return await evaluate(payload, db, request, background_tasks, platform)
 
 
-@router.post("/v1/feedback")
-def feedback(payload: FeedbackRequest, platform: Platform = Depends(get_current_user)):
-    """Submit feedback - requires JWT authentication."""
-    return {
-        "status": "success",
-        "transaction_id": payload.transaction_id,
-    }
+@router.post("/v1/feedback", response_model=FeedbackResponse)
+def submit_feedback(
+    payload: FeedbackRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_session),
+    platform: Platform = Depends(get_current_user),
+):
+    """
+    Submit feedback for a transaction.
+    
+    This endpoint:
+    1. Stores the feedback request in the database
+    2. Launches a background task to update the transaction features with the corrected is_fraud label
+    
+    Args:
+        payload: FeedbackRequest containing transaction_id, is_fraud, reported_by, reported_at
+        background_tasks: FastAPI background tasks manager
+        db: Database session
+        platform: Current authenticated platform
+    
+    Returns:
+        FeedbackResponse with status and message
+    """
+    # Verify transaction exists and belongs to this platform
+    transaction = db.exec(
+        select(Transaction).where(
+            Transaction.platform_id == platform.id,
+            Transaction.id == payload.transaction_id,
+        )
+    ).first()
+    
+    if not transaction:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Transaction {payload.transaction_id} not found"
+        )
+    
+    # Create feedback record
+    feedback = Feedback(
+        platform_id=platform.id,
+        transaction_id=payload.transaction_id,
+        outcome="fraudulent" if payload.is_fraud else "legitimate",
+        reported_by=payload.reported_by,
+        reported_at=payload.reported_at,
+    )
+    
+    db.add(feedback)
+    db.commit()
+    db.refresh(feedback)
+    
+    # Launch background task to update transaction features label
+    background_tasks.add_task(
+        update_transaction_label,
+        transaction_id=payload.transaction_id,
+        is_fraud=payload.is_fraud,
+    )
+    
+    return FeedbackResponse(
+        status="success",
+        transaction_id=payload.transaction_id,
+        message=f"Feedback received and recorded as {feedback.outcome}. Training data will be updated in the background.",
+    )
+
+
+@router.get("/v1/feedback", response_model=FeedbackListResponse)
+def get_all_feedback(
+    db: Session = Depends(get_session),
+    platform: Platform = Depends(get_current_user),
+):
+    """
+    Get all feedback submitted by the platform.
+    
+    Returns a list of all feedback entries for the authenticated platform,
+    sorted by most recent first.
+    
+    Args:
+        db: Database session
+        platform: Current authenticated platform
+    
+    Returns:
+        FeedbackListResponse containing total count and list of feedback items
+    """
+    feedbacks = db.exec(
+        select(Feedback).where(
+            Feedback.platform_id == platform.id
+        ).order_by(desc(Feedback.reported_at))
+    ).all()
+    
+    feedback_items = [
+        FeedbackItem(
+            id=feedback.id,
+            transaction_id=feedback.transaction_id,
+            is_fraud=feedback.outcome == "fraudulent" if feedback.outcome else False,
+            reported_by=feedback.reported_by,
+            reported_at=feedback.reported_at,
+            created_at=feedback.reported_at,  # Using reported_at as created_at if not available
+        )
+        for feedback in feedbacks
+    ]
+    
+    return FeedbackListResponse(
+        total=len(feedback_items),
+        feedbacks=feedback_items,
+    )
 
 
 @router.get("/v1/transactions")

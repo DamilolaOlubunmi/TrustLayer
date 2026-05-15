@@ -10,7 +10,7 @@ load_dotenv()
 
 resend.api_key = os.getenv("RESEND_API_KEY")
 
-FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "TrustLayer <alerts@trustlayer.ng>")
+FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "TrustLayer <trustlayer@resend.dev>")
 
 
 def _render_reasons_html(reasons: list[str]) -> str:
@@ -70,10 +70,10 @@ def send_review_email(
 
             <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;">
               <form action="{html.escape(allow_link)}" method="post" style="margin:0;">
-                <button type="submit" style="border:0;border-radius:10px;background:#0f9d58;color:#ffffff;padding:12px 18px;font-weight:700;cursor:pointer;">ALLOW</button>
+                <button type="submit" style="border:0;border-radius:10px;background:#0f9d58;margin:10px;color:#ffffff;padding:12px 18px;font-weight:700;cursor:pointer;">ALLOW</button>
               </form>
               <form action="{html.escape(block_link)}" method="post" style="margin:0;">
-                <button type="submit" style="border:0;border-radius:10px;background:#d93025;color:#ffffff;padding:12px 18px;font-weight:700;cursor:pointer;">BLOCK</button>
+                <button type="submit" style="border:0;border-radius:10px;background:#d93025;margin:10px;color:#ffffff;padding:12px 18px;font-weight:700;cursor:pointer;">BLOCK</button>
               </form>
             </div>
 

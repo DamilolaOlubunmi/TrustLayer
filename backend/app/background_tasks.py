@@ -14,18 +14,18 @@ def save_features_to_store(
     is_fraud: bool | None = None
 ) -> None:
     with Session(engine) as db:
-        if is_fraud:
+        merged_features = {**buyer_features, **vendor_features}
+
+        if is_fraud is not None:
             record = TransactionFeatures(
                 transaction_id=transaction_id,
                 is_fraud=int(is_fraud),
-                **buyer_features,
-                **vendor_features
+                **merged_features
             )
         else:
             record = TransactionFeatures(
                 transaction_id=transaction_id,
-                **buyer_features,
-                **vendor_features
+                **merged_features
             )
 
         db.add(record)
@@ -97,4 +97,38 @@ async def send_review_notification(
         reasons=reasons,
         platform=platform,
     )
+
+
+def update_transaction_label(
+    transaction_id: str,
+    is_fraud: bool,
+) -> None:
+    """Update the is_fraud label for a transaction in the training features store.
+    
+    Args:
+        transaction_id: ID of the transaction
+        is_fraud: Whether the transaction is fraudulent (True) or legitimate (False)
+    """
+    with Session(engine) as db:
+        # Find every transaction features record for this transaction id
+        features_rows = db.exec(
+            select(TransactionFeatures).where(
+                TransactionFeatures.transaction_id == transaction_id
+            )
+        ).all()
+
+        if features_rows:
+            for features in features_rows:
+                features.is_fraud = int(is_fraud)
+                db.add(features)
+        else:
+            # If no features record exists, create one with just the label
+            db.add(
+                TransactionFeatures(
+                    transaction_id=transaction_id,
+                    is_fraud=int(is_fraud),
+                )
+            )
+
+        db.commit()
 
