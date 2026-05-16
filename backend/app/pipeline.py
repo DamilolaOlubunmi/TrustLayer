@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 import shortuuid
 from fastapi import HTTPException, Request
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.models import (
@@ -56,6 +57,56 @@ def get_squad_status(decision: str, squad_data: dict) -> str | None:
         return "failed"
 
     return "initiated"
+
+
+def _recommended_action_for_decision(decision: str | None) -> str:
+    recommended_action_map = {
+        "ALLOW": "Proceed with payment",
+        "REVIEW": "Trigger step-up authentication or queue for manual review",
+        "BLOCK": "Block transaction and warn buyer",
+    }
+
+    return recommended_action_map.get(
+        decision or "REVIEW",
+        "Trigger step-up authentication or queue for manual review",
+    )
+
+
+def _build_evaluate_response(
+    transaction: Transaction,
+    squad_response: dict | None = None,
+    missing_signals: list[str] | None = None,
+) -> EvaluateResponse:
+    decision = transaction.decision or "REVIEW"
+
+    return EvaluateResponse(
+        transaction_id=transaction.id,
+        decision=decision,
+        score=transaction.final_score or 0.0,
+        confidence=transaction.confidence or "MEDIUM",
+        buyer_risk_score=round(transaction.buyer_score or 0.0, 4),
+        vendor_risk_score=round(transaction.vendor_score or 0.0, 4),
+        primary_signal=transaction.primary_signal or "unknown",
+        escalated_to_llm=bool(transaction.escalated_to_llm),
+        rule_preset_matched=transaction.rule_preset_matched,
+        reasons=transaction.reasons or [],
+        recommended_action=_recommended_action_for_decision(decision),
+        missing_signals=missing_signals or [],
+        squad_response=squad_response,
+    )
+
+
+def _get_existing_transaction(
+    db: Session,
+    transaction_id: str,
+    platform_id: str,
+) -> Transaction | None:
+    return db.exec(
+        select(Transaction).where(
+            Transaction.id == transaction_id,
+            Transaction.platform_id == platform_id,
+        )
+    ).first()
 
 
 async def safe_initiate_payment(
@@ -123,8 +174,19 @@ async def evaluate(
             f"txn_{int(datetime.now().timestamp() * 1000)}"
             f"{shortuuid.uuid()}"
         )
-    else:
-        payload.transaction.id += f"_{shortuuid.uuid()[:12]}"
+
+    existing_transaction = _get_existing_transaction(
+        db,
+        payload.transaction.id,
+        platform.id,
+    )
+
+    if existing_transaction:
+        return _build_evaluate_response(
+            existing_transaction,
+            squad_response={"status": "duplicate_request"},
+            missing_signals=[],
+        )
 
     platform_settings = db.exec(
         select(Settings).where(
@@ -525,17 +587,6 @@ async def evaluate(
     # 9. RECOMMENDED ACTION
     # ─────────────────────────────────────────────
 
-    recommended_action_map = {
-        "ALLOW": "Proceed with payment",
-        "REVIEW": (
-            "Trigger step-up authentication "
-            "or queue for manual review"
-        ),
-        "BLOCK": "Block transaction and warn buyer"
-    }
-
-    recommended_action = recommended_action_map[decision]
-
     # ─────────────────────────────────────────────
     # 10. SAVE TRANSACTION
     # ─────────────────────────────────────────────
@@ -585,6 +636,32 @@ async def evaluate(
     try:
         db.add(transaction)
         db.commit()
+
+    except IntegrityError:
+
+        db.rollback()
+
+        existing_transaction = _get_existing_transaction(
+            db,
+            transaction.id,
+            platform.id,
+        )
+
+        if existing_transaction:
+            return _build_evaluate_response(
+                existing_transaction,
+                squad_response=squad_data,
+                missing_signals=missing_signals,
+            )
+
+        logger.exception(
+            "Transaction insert collided but the existing row was not found"
+        )
+
+        raise HTTPException(
+            500,
+            "Failed to save transaction"
+        )
 
     except Exception:
 
@@ -644,7 +721,7 @@ async def evaluate(
         escalated_to_llm=escalated_to_llm,
         rule_preset_matched=matched_preset,
         reasons=reasons,
-        recommended_action=recommended_action,
+        recommended_action=_recommended_action_for_decision(decision),
         missing_signals=missing_signals,
         squad_response=squad_data
     )

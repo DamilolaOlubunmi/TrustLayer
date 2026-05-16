@@ -99,11 +99,12 @@ async def squad_webhook(request: Request, db: Session = Depends(get_session)):
 
     transaction.squad_status = "completed"
     transaction.payment_method = transaction_type
-    transaction.amount = amount
+    transaction.amount = amount/100  # Convert from kobo to main currency unit
     transaction.currency = currency
     
     db.add(transaction)
     db.commit()
+    db.refresh(transaction)
     logger.info(
         "Squad webhook processed successfully: event=%s transaction_ref=%s status=completed",
         event,
