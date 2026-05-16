@@ -44,6 +44,13 @@ LLM_UPPER = 0.65
 
 
 def get_squad_status(decision: str, squad_data: dict) -> str | None:
+    """Derive a human-friendly squad_status string from the decision and squad response.
+
+    Returns 'initiated' when squad returned success metadata, 'failed' when squad
+    indicated an error or returned falsy data, and `None` when no squad action is
+    applicable for the decision.
+    """
+
     if decision != "ALLOW":
         return None
 

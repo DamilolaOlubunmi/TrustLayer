@@ -9,6 +9,12 @@ from app.schema import EvaluateRequest
 from app.utils import fetch_platform_id
 
 def build_buyer_features(payload: EvaluateRequest, request: Request, db: Session) -> dict:
+    """Build and return buyer-side feature vector for ML models.
+
+    The function reads historical profile data when available and computes
+    derived signals used by the buyer model.
+    """
+
     if not payload.transaction or not payload.buyer:
         raise ValueError("Transaction and Buyer information must be provided to build buyer features.")
 
@@ -125,6 +131,12 @@ def build_buyer_features(payload: EvaluateRequest, request: Request, db: Session
 
 
 def build_vendor_features(payload: EvaluateRequest, request: Request, db: Session) -> dict:
+    """Build and return vendor-side feature vector for ML models.
+
+    Uses vendor profile data and recent transaction statistics to compute
+    signals consumed by the vendor model.
+    """
+
     if not payload.transaction or not payload.buyer:
         raise ValueError("Transaction and Buyer information must be provided to build buyer features.")
 

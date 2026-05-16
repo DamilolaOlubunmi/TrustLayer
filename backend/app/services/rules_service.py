@@ -12,6 +12,11 @@ def run_rule_presets(
     payload: EvaluateRequest,
     db: Session
 ) -> tuple[float | None, str | None]:
+    """Run configured rule presets against the payload and return a floor and matched preset.
+
+    Returns a tuple `(floor, matched_preset)` where `floor` is the numeric minimum
+    score enforced by a triggered rule, or `None` when no rule triggered.
+    """
 
     preset_results = {
         "fake_electronics_listing": lambda: fake_electronics_listing(payload),

@@ -15,6 +15,17 @@ logger = logging.getLogger(__name__)
 
 
 def _fallback_llm_decision(reason: str) -> dict[str, Any]:
+  """Return a safe LLM fallback verdict.
+
+  This is used when the external LLM fails or returns an unparsable response.
+
+  Args:
+      reason: Short explanation for why fallback was triggered.
+
+  Returns:
+      A dictionary matching the expected LLM decision shape.
+  """
+
   return {
     "decision": "REVIEW",
     "confidence": "MEDIUM",
@@ -24,6 +35,18 @@ def _fallback_llm_decision(reason: str) -> dict[str, Any]:
 
 
 def _extract_json_object(raw: str) -> dict[str, Any] | None:
+  """Attempt to extract and parse a JSON object from a raw string.
+
+  The function tolerates fenced code blocks and extraneous text surrounding
+  the JSON payload. Returns `None` when parsing fails.
+
+  Args:
+      raw: The raw string returned by an LLM or external service.
+
+  Returns:
+      A dict if a JSON object was found and parsed, otherwise `None`.
+  """
+
   text = raw.strip()
   if not text:
     return None

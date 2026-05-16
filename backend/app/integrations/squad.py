@@ -32,6 +32,23 @@ async def initiate_payment(
     }
 
     # async with httpx.AsyncClient(timeout=120.0) as client:
+    """Initiate a payment with Squad's API.
+
+    Args:
+        squad_secret_key: Platform-specific secret to authenticate with Squad.
+        transaction_ref: Reference string for the transaction.
+        amount: Amount in main currency units (converted to kobo internally).
+        email: Customer email for the payment.
+        callback_url: Where Squad should POST asynchronous events.
+        currency: Currency code (default 'NGN').
+
+    Returns:
+        Parsed JSON response from Squad as a dict.
+
+    Raises:
+        Exception: If Squad returns an invalid response or indicates failure.
+    """
+
     response = await http_client.post(
         f"{SQUAD_SANDBOX_URL}/transaction/initiate",
         json=payload,
@@ -51,6 +68,17 @@ async def initiate_payment(
 
 
 def validate_squad_signature(body: bytes, encrypted_body_header: str | None, secret_key: str) -> bool:
+
+    """Validate the HMAC signature on an incoming Squad webhook.
+
+    Args:
+        body: Raw request body bytes.
+        encrypted_body_header: The value of the x-squad-encrypted-body header.
+        secret_key: The shared secret stored for the platform.
+
+    Returns:
+        True when the signature matches, False otherwise.
+    """
 
     if not encrypted_body_header or not secret_key:
         return False

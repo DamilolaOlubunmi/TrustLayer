@@ -23,14 +23,31 @@ api_key_header = APIKeyHeader(name="X-API-Key")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a plaintext password against a stored hash.
+
+    Returns True when the plaintext matches the hashed value.
+    """
+
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
+    """Hash a password and return the resulting digest/string."""
+
     return pwd_context.hash(password)
 
 
 def create_access_token(subject: str, expires_delta: Optional[timedelta] = None) -> str:
+    """Create a JWT access token for the given subject.
+
+    Args:
+        subject: The subject to encode into the token (usually platform id).
+        expires_delta: Optional expiry timedelta.
+
+    Returns:
+        A signed JWT as a string.
+    """
+
     to_encode = {"sub": str(subject)}
     expire = datetime.now() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
@@ -39,6 +56,11 @@ def create_access_token(subject: str, expires_delta: Optional[timedelta] = None)
 
 
 def decode_access_token(token: str) -> dict:
+    """Decode and validate a JWT access token returning its payload.
+
+    Raises an HTTPException on invalid token.
+    """
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
@@ -47,6 +69,11 @@ def decode_access_token(token: str) -> dict:
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)) -> Platform:
+    """Resolve the current `Platform` from an OAuth2 access token.
+
+    Raises HTTP 401 when token is invalid or platform not found/active.
+    """
+
     payload = decode_access_token(token)
     sub = payload.get("sub")
     if not sub:

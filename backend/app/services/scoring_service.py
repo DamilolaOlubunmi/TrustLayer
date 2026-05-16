@@ -8,6 +8,15 @@ def run_models(
     buyer_features:  dict,
     vendor_features: dict
 ) -> tuple[float, float]:
+    """Run buyer and vendor models in parallel and return their positive-class probabilities.
+
+    Args:
+        buyer_features: Feature vector for buyer model.
+        vendor_features: Feature vector for vendor model.
+
+    Returns:
+        Tuple of (buyer_score, vendor_score) as floats in range [0,1].
+    """
     import numpy as np
 
     buyer_model  = Models.buyer_model
@@ -39,6 +48,12 @@ def aggregate_scores(
     platform_settings: Settings
 ) -> tuple[float, str]:
 
+    """Combine buyer and vendor scores into a final score and primary signal.
+
+    Uses platform settings for weighting and applies any rule floor.
+    Returns (final_score, primary_signal).
+    """
+
     buyer_weight  = platform_settings.buyer_weight  or 0.40
     vendor_weight = platform_settings.vendor_weight or 0.60
 
@@ -58,6 +73,10 @@ def determine_confidence(
     vendor_score:    float,
     missing_signals: list[str]
 ) -> str:
+    """Determine a confidence level ('LOW'|'MEDIUM'|'HIGH') for the final score.
+
+    Considers the gap between model scores and any critical missing signals.
+    """
 
     score_gap        = abs(buyer_score - vendor_score)
     critical_missing = {
@@ -84,6 +103,10 @@ def determine_decision(
     final_score: float,
     platform_settings: Settings
 ) -> str:
+    """Map the numeric final_score into a decision string based on thresholds.
+
+    Returns one of 'BLOCK', 'REVIEW', or 'ALLOW'.
+    """
 
     block_threshold  = platform_settings.block_threshold  or 0.70
     review_threshold = platform_settings.review_threshold or 0.40

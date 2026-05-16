@@ -14,13 +14,18 @@ FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "TrustLayer <trustlayer@resend.dev>"
 
 
 def _render_reasons_html(reasons: list[str]) -> str:
-    if not reasons:
-        return "<li>No reasons were supplied.</li>"
+  """Render a list of reasons as escaped HTML list items.
 
-    return "".join(
-        f'<li style="margin-bottom: 8px;">{html.escape(reason)}</li>'
-        for reason in reasons
-    )
+  This helper ensures safe HTML rendering for inclusion in email bodies.
+  """
+
+  if not reasons:
+    return "<li>No reasons were supplied.</li>"
+
+  return "".join(
+    f'<li style="margin-bottom: 8px;">{html.escape(reason)}</li>'
+    for reason in reasons
+  )
 
 
 def send_review_email(

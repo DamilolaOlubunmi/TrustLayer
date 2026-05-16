@@ -22,10 +22,17 @@ api_router = APIRouter(prefix="/api", tags=["review-api"])
 
 
 def _utcnow() -> datetime:
+    """Return current UTC datetime used by review handlers."""
+
     return datetime.now(timezone.utc)
 
 
 def _render_review_page(review: ReviewDecision) -> str:
+    """Render an HTML page for manual review of a transaction.
+
+    This function returns a full HTML document as a string for browser usage.
+    """
+
     transaction = review.transaction
     reasons = transaction.reasons or [] if transaction else []
     reason_items = "".join(
@@ -78,6 +85,8 @@ def _render_review_page(review: ReviewDecision) -> str:
 
 
 def _render_action_page(review: ReviewDecision, decision: str, whitelist_created: bool) -> str:
+    """Render an HTML summary page after a review action was taken."""
+
     transaction = review.transaction
     transaction_id = transaction.id if transaction else review.transaction_id
     message = "Temporary whitelist created." if whitelist_created else "No whitelist was created."
@@ -108,6 +117,8 @@ def _render_action_page(review: ReviewDecision, decision: str, whitelist_created
 
 
 def _action_error_to_http_exception(exc: ValueError) -> HTTPException:
+    """Convert domain `ValueError` messages into appropriate HTTP exceptions."""
+
     message = str(exc)
     if "expired" in message.lower():
         return HTTPException(status_code=status.HTTP_410_GONE, detail=message)
@@ -119,11 +130,19 @@ def _action_error_to_http_exception(exc: ValueError) -> HTTPException:
 
 
 def _ensure_platform_matches_review(review: ReviewDecision, platform: Platform) -> None:
+    """Raise HTTP 403 when the review token belongs to another platform."""
+
     if review.platform_id != platform.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Review token does not belong to this platform")
 
 
 def _handle_review_action(token: str, session: Session, action: str, platform: Platform | None = None) -> tuple[ReviewDecision, bool]:
+    """Apply the given action for a review identified by `token`.
+
+    Returns the ReviewDecision and a boolean indicating whether a whitelist
+    entry was created.
+    """
+
     review = get_review_decision_by_token(session, token)
     if not review:
         raise ValueError("Review token not found")

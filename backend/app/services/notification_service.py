@@ -25,10 +25,21 @@ REVIEW_BASE_URL = os.getenv("REVIEW_BASE_URL") or os.getenv("APP_BASE_URL") or "
 
 
 def utcnow() -> datetime:
+    """Return the current UTC datetime with tzinfo set.
+
+    Utility wrapper to ensure consistent timezone-aware timestamps across the
+    codebase.
+    """
+
     return datetime.now(timezone.utc)
 
 
 def _as_utc_aware(value: datetime | None) -> datetime | None:
+    """Normalize a datetime to UTC and ensure it is timezone-aware.
+
+    Returns `None` if `value` is `None`.
+    """
+
     if value is None:
         return None
     if value.tzinfo is None:
@@ -37,20 +48,31 @@ def _as_utc_aware(value: datetime | None) -> datetime | None:
 
 
 def generate_review_token() -> str:
+    """Generate a cryptographically-random token used to identify review flows."""
+
     return str(uuid.uuid4())
 
 
 def build_review_link(review_token: str) -> str:
+    """Build a full URL for a review page given a review token."""
+
     return f"{REVIEW_BASE_URL.rstrip('/')}/review/{review_token}"
 
 
 def _tokens_match(expected: str | None, provided: str) -> bool:
+    """Securely compare two tokens, returning True on exact match.
+
+    Avoids timing attacks by using `hmac.compare_digest`.
+    """
+
     if not expected:
         return False
     return hmac.compare_digest(expected, provided)
 
 
 def get_review_decision_by_token(session: Session, review_token: str) -> ReviewDecision | None:
+    """Retrieve a `ReviewDecision` by token, returning None when not found or when tokens don't match."""
+
     record = session.exec(
         select(ReviewDecision).where(ReviewDecision.review_token == review_token)
     ).first()
@@ -69,7 +91,13 @@ def get_active_whitelist_entry(
     payment_method: str | None,
     amount: int | float | None,
     current_time: datetime | None = None,
-) -> TransactionWhitelist | None:
+ ) -> TransactionWhitelist | None:
+    """Return an active whitelist entry matching the provided transaction context.
+
+    The function checks expiry and `max_amount` and returns the most recently
+    created matching whitelist entry or `None` when there is no valid entry.
+    """
+
     if not all([platform_id, buyer_id, vendor_id, payment_method]):
         return None
 
@@ -102,7 +130,13 @@ def create_temporary_whitelist_entry(
     transaction: Transaction,
     platform_id: str,
     current_time: datetime | None = None,
-) -> TransactionWhitelist:
+ ) -> TransactionWhitelist:
+    """Create and return a temporary whitelist entry derived from a transaction.
+
+    The whitelist entry is not committed by this function; calling code should
+    commit the session after adding the entry to persist it.
+    """
+
     if not transaction.buyer_id or not transaction.vendor_id or not transaction.payment_method:
         raise ValueError("Transaction is missing fields required for whitelist creation")
 
@@ -129,6 +163,13 @@ def apply_review_action(
     review_token: str,
     action: str,
 ) -> tuple[ReviewDecision, TransactionWhitelist | None]:
+    """Apply a review decision (ALLOW or BLOCK) identified by `review_token`.
+
+    This will mark the review as used and, when the action is ALLOW, create a
+    temporary whitelist entry. Raises `ValueError` for invalid tokens or
+    invalid state.
+    """
+
     now = utcnow()
     review_decision = get_review_decision_by_token(session, review_token)
     if not review_decision:

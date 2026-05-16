@@ -14,6 +14,12 @@ def save_features_to_store(
     vendor_features: dict,
     is_fraud: bool | None = None
 ) -> None:
+    """Persist combined buyer and vendor feature vectors for training.
+
+    This runs as a background task and writes a `TransactionFeatures` row.
+    If `is_fraud` is provided the label will be stored alongside features.
+    """
+
     with Session(engine) as db:
         merged_features = {**buyer_features, **vendor_features}
 
@@ -38,7 +44,12 @@ def update_profiles(
     final_score: float,
     platform: Platform,
 ) -> None:
-    
+    """Update or create buyer and vendor profile records.
+
+    Increments transaction counters and updates rolling averages based on the
+    supplied `final_score`. Intended to be executed in the background.
+    """
+
     with Session(engine) as db:
     # ── Vendor profile ────────────────────────
         with db.no_autoflush:

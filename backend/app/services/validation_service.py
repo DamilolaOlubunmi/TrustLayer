@@ -1,6 +1,12 @@
 from app.schema import EvaluateRequest
 
 def run_validation_gate(payload: EvaluateRequest) -> list[str]:
+    """Check for missing signals required by the scoring pipeline.
+
+    Returns a list of missing signal keys to help determine confidence and
+    whether extra data collection is required.
+    """
+
     missing = []
 
     if not payload.buyer.total_past_transactions:
